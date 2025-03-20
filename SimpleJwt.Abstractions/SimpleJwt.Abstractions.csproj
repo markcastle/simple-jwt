@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>annotations</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>SimpleJwt.Abstractions</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>SimpleJwt Contributors</Authors>
+    <Company>SimpleJwt</Company>
+    <Title>SimpleJwt.Abstractions</Title>
+    <Description>Abstractions for the SimpleJwt library - a lightweight, secure, and extensible JWT (JSON Web Token) library for .NET applications.</Description>
+    <PackageTags>jwt;token;authentication;security;validation;abstractions</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/yourusername/simple-jwt</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/yourusername/simple-jwt</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReleaseNotes>Initial release</PackageReleaseNotes>
+    <Copyright>Copyright (c) 2023 SimpleJwt Contributors</Copyright>
+    <WarningsAsErrors></WarningsAsErrors>
+    <NoWarn>CS8625</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\LICENSE" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>
