@@ -53,6 +53,8 @@ dotnet add package SimpleJwt.Unity
 dotnet add package SimpleJwt.DependencyInjection
 ```
 
+> 📢 **Note:** The SimpleJwt packages have not been published to NuGet yet. We plan to publish them after completing more extensive testing and validation. In the meantime, you can build the packages from source using this repository.
+
 ## 🏗️ Technical Architecture
 
 SimpleJwt uses a layered architecture:
