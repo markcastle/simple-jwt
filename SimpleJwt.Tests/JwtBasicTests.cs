@@ -7,14 +7,25 @@ using SimpleJwt.Core;
 
 namespace SimpleJwt.Tests
 {
+    /// <summary>
+    /// Provides basic tests for JWT token creation, parsing, and validation functionality.
+    /// </summary>
     public class JwtBasicTests
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="JwtBasicTests"/> class.
+        /// Sets up the default implementations for JWT-related factories.
+        /// </summary>
         public JwtBasicTests()
         {
             // Initialize the factories with default implementations
             SimpleJwtDefaults.Initialize();
         }
 
+        /// <summary>
+        /// Tests that a JWT token can be successfully created and parsed.
+        /// Verifies that all claims set during creation are correctly retrieved after parsing.
+        /// </summary>
         [Fact]
         public void ShouldCreateAndParseToken()
         {
@@ -43,6 +54,10 @@ namespace SimpleJwt.Tests
             Assert.Equal("custom-value", jwtToken.GetClaim<string>("custom-claim"));
         }
 
+        /// <summary>
+        /// Tests that a signed JWT token can be successfully validated.
+        /// Verifies that a correctly signed token with valid claims passes validation.
+        /// </summary>
         [Fact]
         public void ShouldSignAndValidateToken()
         {
@@ -72,6 +87,10 @@ namespace SimpleJwt.Tests
             Assert.False(result.HasErrors);
         }
 
+        /// <summary>
+        /// Tests that validation fails when a JWT token is verified with an incorrect key.
+        /// Verifies that the validation result contains the expected signature validation error.
+        /// </summary>
         [Fact]
         public void ShouldFailValidationWithInvalidSignature()
         {
@@ -103,6 +122,10 @@ namespace SimpleJwt.Tests
             Assert.Equal(ValidationCodes.InvalidSignature, result.Errors[0].Code);
         }
 
+        /// <summary>
+        /// Tests that validation fails when a JWT token contains an issuer that doesn't match the expected value.
+        /// Verifies that the validation result contains the expected issuer validation error.
+        /// </summary>
         [Fact]
         public void ShouldFailValidationWithWrongIssuer()
         {
@@ -133,6 +156,10 @@ namespace SimpleJwt.Tests
             Assert.Equal(ValidationCodes.InvalidIssuer, result.Errors[0].Code);
         }
 
+        /// <summary>
+        /// Tests that validation fails when a JWT token has expired.
+        /// Verifies that the validation result contains the expected token expiration error.
+        /// </summary>
         [Fact]
         public void ShouldFailValidationWithExpiredToken()
         {
