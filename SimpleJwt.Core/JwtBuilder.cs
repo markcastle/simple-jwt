@@ -1,11 +1,10 @@
+using SimpleJwt.Abstractions;
+using SimpleJwt.Core.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using SimpleJwt.Abstractions;
-using SimpleJwt.Core.Utilities;
 
 namespace SimpleJwt.Core
 {
@@ -24,7 +23,7 @@ namespace SimpleJwt.Core
         {
             _header = new Dictionary<string, object>
             {
-                { Abstractions.JwtConstants.HeaderType, Abstractions.JwtConstants.TokenTypeJwt }
+                { JwtConstants.HeaderType, JwtConstants.TokenTypeJwt }
             };
 
             _payload = new Dictionary<string, object>();
@@ -76,7 +75,7 @@ namespace SimpleJwt.Core
         /// <returns>The current <see cref="IJwtBuilder"/> instance.</returns>
         public IJwtBuilder SetIssuer(string issuer)
         {
-            return AddClaim(Abstractions.JwtConstants.ClaimIssuer, issuer);
+            return AddClaim(JwtConstants.ClaimIssuer, issuer);
         }
 
         /// <summary>
@@ -86,7 +85,7 @@ namespace SimpleJwt.Core
         /// <returns>The current <see cref="IJwtBuilder"/> instance.</returns>
         public IJwtBuilder SetSubject(string subject)
         {
-            return AddClaim(Abstractions.JwtConstants.ClaimSubject, subject);
+            return AddClaim(JwtConstants.ClaimSubject, subject);
         }
 
         /// <summary>
@@ -96,7 +95,7 @@ namespace SimpleJwt.Core
         /// <returns>The current <see cref="IJwtBuilder"/> instance.</returns>
         public IJwtBuilder SetAudience(string audience)
         {
-            return AddClaim(Abstractions.JwtConstants.ClaimAudience, audience);
+            return AddClaim(JwtConstants.ClaimAudience, audience);
         }
 
         /// <summary>
@@ -106,7 +105,7 @@ namespace SimpleJwt.Core
         /// <returns>The current <see cref="IJwtBuilder"/> instance.</returns>
         public IJwtBuilder SetId(string id)
         {
-            return AddClaim(Abstractions.JwtConstants.ClaimJwtId, id);
+            return AddClaim(JwtConstants.ClaimJwtId, id);
         }
 
         /// <summary>
@@ -116,7 +115,7 @@ namespace SimpleJwt.Core
         /// <returns>The current <see cref="IJwtBuilder"/> instance.</returns>
         public IJwtBuilder SetJwtId(string jwtId)
         {
-            return AddClaim(Abstractions.JwtConstants.ClaimJwtId, jwtId);
+            return AddClaim(JwtConstants.ClaimJwtId, jwtId);
         }
 
         /// <summary>
@@ -143,7 +142,7 @@ namespace SimpleJwt.Core
         /// <returns>The current <see cref="IJwtBuilder"/> instance.</returns>
         public IJwtBuilder SetKeyId(string keyId)
         {
-            return AddHeaderClaim(Abstractions.JwtConstants.HeaderKeyId, keyId);
+            return AddHeaderClaim(JwtConstants.HeaderKeyId, keyId);
         }
 
         /// <summary>
@@ -154,7 +153,7 @@ namespace SimpleJwt.Core
         public IJwtBuilder SetExpirationTime(DateTime expirationTime)
         {
             long unixTimestamp = new DateTimeOffset(expirationTime).ToUnixTimeSeconds();
-            return AddClaim(Abstractions.JwtConstants.ClaimExpirationTime, unixTimestamp);
+            return AddClaim(JwtConstants.ClaimExpirationTime, unixTimestamp);
         }
 
         /// <summary>
@@ -199,7 +198,7 @@ namespace SimpleJwt.Core
         public IJwtBuilder SetNotBefore(DateTime notBefore)
         {
             long unixTimestamp = new DateTimeOffset(notBefore).ToUnixTimeSeconds();
-            return AddClaim(Abstractions.JwtConstants.ClaimNotBefore, unixTimestamp);
+            return AddClaim(JwtConstants.ClaimNotBefore, unixTimestamp);
         }
 
         /// <summary>
@@ -210,7 +209,7 @@ namespace SimpleJwt.Core
         public IJwtBuilder SetIssuedAt(DateTime issuedAt)
         {
             long unixTimestamp = new DateTimeOffset(issuedAt).ToUnixTimeSeconds();
-            return AddClaim(Abstractions.JwtConstants.ClaimIssuedAt, unixTimestamp);
+            return AddClaim(JwtConstants.ClaimIssuedAt, unixTimestamp);
         }
 
         /// <summary>
@@ -241,7 +240,7 @@ namespace SimpleJwt.Core
                 throw new ArgumentException("Key cannot be empty.", nameof(key));
             }
 
-            _header[Abstractions.JwtConstants.HeaderAlgorithm] = Abstractions.JwtConstants.AlgorithmHs256;
+            _header[JwtConstants.HeaderAlgorithm] = JwtConstants.AlgorithmHs256;
             
             using (var hmac = new HMACSHA256(key))
             {
@@ -280,7 +279,7 @@ namespace SimpleJwt.Core
                 throw new ArgumentException("Key cannot be empty.", nameof(key));
             }
 
-            _header[Abstractions.JwtConstants.HeaderAlgorithm] = Abstractions.JwtConstants.AlgorithmHs384;
+            _header[JwtConstants.HeaderAlgorithm] = JwtConstants.AlgorithmHs384;
             
             using (var hmac = new HMACSHA384(key))
             {
@@ -307,7 +306,7 @@ namespace SimpleJwt.Core
                 throw new ArgumentException("Key cannot be empty.", nameof(key));
             }
 
-            _header[Abstractions.JwtConstants.HeaderAlgorithm] = Abstractions.JwtConstants.AlgorithmHs512;
+            _header[JwtConstants.HeaderAlgorithm] = JwtConstants.AlgorithmHs512;
             
             using (var hmac = new HMACSHA512(key))
             {
@@ -343,7 +342,7 @@ namespace SimpleJwt.Core
         /// <returns>The unsigned JWT token.</returns>
         public string CreateUnsecured()
         {
-            _header[Abstractions.JwtConstants.HeaderAlgorithm] = Abstractions.JwtConstants.AlgorithmNone;
+            _header[JwtConstants.HeaderAlgorithm] = JwtConstants.AlgorithmNone;
 
             string headerJson = JsonSerializer.Serialize(_header);
             string payloadJson = JsonSerializer.Serialize(_payload);
@@ -366,7 +365,7 @@ namespace SimpleJwt.Core
                 throw new ArgumentNullException(nameof(rsa));
             }
 
-            _header[Abstractions.JwtConstants.HeaderAlgorithm] = Abstractions.JwtConstants.AlgorithmRs256;
+            _header[JwtConstants.HeaderAlgorithm] = JwtConstants.AlgorithmRs256;
             return SignWithRsa(rsa, HashAlgorithmName.SHA256);
         }
 
@@ -382,7 +381,7 @@ namespace SimpleJwt.Core
                 throw new ArgumentNullException(nameof(rsa));
             }
 
-            _header[Abstractions.JwtConstants.HeaderAlgorithm] = Abstractions.JwtConstants.AlgorithmRs384;
+            _header[JwtConstants.HeaderAlgorithm] = JwtConstants.AlgorithmRs384;
             return SignWithRsa(rsa, HashAlgorithmName.SHA384);
         }
 
@@ -398,7 +397,7 @@ namespace SimpleJwt.Core
                 throw new ArgumentNullException(nameof(rsa));
             }
 
-            _header[Abstractions.JwtConstants.HeaderAlgorithm] = Abstractions.JwtConstants.AlgorithmRs512;
+            _header[JwtConstants.HeaderAlgorithm] = JwtConstants.AlgorithmRs512;
             return SignWithRsa(rsa, HashAlgorithmName.SHA512);
         }
 
@@ -431,7 +430,7 @@ namespace SimpleJwt.Core
                 throw new ArgumentNullException(nameof(ecdsa));
             }
 
-            _header[Abstractions.JwtConstants.HeaderAlgorithm] = Abstractions.JwtConstants.AlgorithmEs256;
+            _header[JwtConstants.HeaderAlgorithm] = JwtConstants.AlgorithmEs256;
             return SignWithEcdsa(ecdsa, HashAlgorithmName.SHA256);
         }
 
@@ -447,7 +446,7 @@ namespace SimpleJwt.Core
                 throw new ArgumentNullException(nameof(ecdsa));
             }
 
-            _header[Abstractions.JwtConstants.HeaderAlgorithm] = Abstractions.JwtConstants.AlgorithmEs384;
+            _header[JwtConstants.HeaderAlgorithm] = JwtConstants.AlgorithmEs384;
             return SignWithEcdsa(ecdsa, HashAlgorithmName.SHA384);
         }
 
@@ -463,7 +462,7 @@ namespace SimpleJwt.Core
                 throw new ArgumentNullException(nameof(ecdsa));
             }
 
-            _header[Abstractions.JwtConstants.HeaderAlgorithm] = Abstractions.JwtConstants.AlgorithmEs512;
+            _header[JwtConstants.HeaderAlgorithm] = JwtConstants.AlgorithmEs512;
             return SignWithEcdsa(ecdsa, HashAlgorithmName.SHA512);
         }
 
