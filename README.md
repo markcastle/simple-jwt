@@ -1,37 +1,37 @@
-# SimpleJwt
+# 🔐 SimpleJwt
 
 A lightweight, secure, and extensible JWT (JSON Web Token) library for .NET applications, designed with performance and security as top priorities. Supports both regular .NET applications and Unity game development.
 
-## Features
+## ✨ Features
 
-- **Standards Compliant**: Fully compliant with RFC 7519 (JWT), RFC 7515 (JWS), and related specifications
-- **Immutable Token Design**: Thread-safe token processing with functional-style modification methods that prevent race conditions in concurrent scenarios
-- **Comprehensive Validation**: Extensive validation options for security-critical applications, including:
+- **🔄 Standards Compliant**: Fully compliant with RFC 7519 (JWT), RFC 7515 (JWS), and related specifications
+- **🔒 Immutable Token Design**: Thread-safe token processing with functional-style modification methods that prevent race conditions in concurrent scenarios
+- **✅ Comprehensive Validation**: Extensive validation options for security-critical applications, including:
   - Signature validation (HMAC, RSA, ECDSA)
   - Issuer and audience validation
   - Expiration and not-before time validation
   - Custom claim validation
-- **Async Support**: First-class async API for high-performance scenarios with proper cancellation token support
-- **Enhanced Security Features**:
+- **⚡ Async Support**: First-class async API for high-performance scenarios with proper cancellation token support
+- **🛡️ Enhanced Security Features**:
   - JWT Confirmation Method (cnf) claim validation for proof-of-possession tokens
   - JWT ID (jti) tracking to prevent replay attacks with built-in validators
   - Token type validation to prevent substitution attacks between different token types
   - Key rotation support with kid header parameter handling
-- **Token Lifetime Management**:
+- **⏱️ Token Lifetime Management**:
   - Token refresh and sliding expiration mechanisms with configurable timeout policies
   - Token revocation capabilities with custom reason storage
   - Built-in support for revocation lists and blacklists
-- **Performance Optimized**:
+- **🚀 Performance Optimized**:
   - Caching layer for parsed tokens and validation results
   - Efficient token parsing and validation with minimal allocations
   - Configurable memory limits to prevent DOS attacks
-- **Unity Compatibility**:
+- **🎮 Unity Compatibility**:
   - Abstracted JSON serialization layer with support for both System.Text.Json and Newtonsoft.Json
   - Compatible with Unity's IL2CPP scripting backend
   - Minimal dependencies for easier integration with Unity projects
   - Coroutine-based API for async operations in Unity
 
-## Installation
+## 📦 Installation
 
 ```bash
 # Install the core package
@@ -53,7 +53,7 @@ dotnet add package SimpleJwt.Unity
 dotnet add package SimpleJwt.DependencyInjection
 ```
 
-## Technical Architecture
+## 🏗️ Technical Architecture
 
 SimpleJwt uses a layered architecture:
 
@@ -67,9 +67,9 @@ SimpleJwt uses a layered architecture:
 
 All components are designed for dependency injection and can be replaced with custom implementations.
 
-## JSON Serialization Abstraction
+## 📄 JSON Serialization Abstraction
 
-SimpleJwt uses an abstracted JSON serialization layer that supports different JSON libraries. **You must explicitly configure a JSON provider before using SimpleJwt**:
+SimpleJwt uses an abstracted JSON serialization layer that supports different JSON libraries. **⚠️ You must explicitly configure a JSON provider before using SimpleJwt**:
 
 ```csharp
 // Configure JSON serialization for System.Text.Json (default in .NET Core)
@@ -89,7 +89,7 @@ public class CustomJsonProvider : IJsonProvider
 }
 ```
 
-### Microsoft Dependency Injection Integration
+### 💉 Microsoft Dependency Injection Integration
 
 If you're using Microsoft DI, you can register SimpleJwt services with extensions:
 
@@ -150,7 +150,7 @@ public class JwtService
 }
 ```
 
-### Unity Integration
+### 🎮 Unity Integration
 
 For Unity projects, use the SimpleJwt.Unity package which provides a simple initialization method:
 
@@ -169,7 +169,7 @@ void Awake()
 }
 ```
 
-#### Important Note for Unity Projects
+#### ⚠️ Important Note for Unity Projects
 
 When using SimpleJwt in Unity:
 
@@ -179,9 +179,9 @@ When using SimpleJwt in Unity:
 
 The library has been refactored to eliminate any direct dependency on System.Text.Json in the core components, ensuring complete compatibility with Unity's IL2CPP scripting backend.
 
-## Quick Start
+## 🚀 Quick Start
 
-### Creating and Signing a JWT
+### 🔨 Creating and Signing a JWT
 
 ```csharp
 // Create a JWT with standard claims
@@ -202,7 +202,7 @@ string tokenWithHeaders = JwtBuilder.Create()
     .SignHs256(Encoding.UTF8.GetBytes("your-secret-key-with-at-least-32-bytes"));
 ```
 
-### Parsing and Validating a JWT
+### 🔍 Parsing and Validating a JWT
 
 ```csharp
 // Parse the token
@@ -356,9 +356,9 @@ if (await revoker.TryGetRevocationReasonAsync(token, out var reason, cancellatio
 }
 ```
 
-## Advanced Features
+## 🔧 Advanced Features
 
-### Custom Claims Transformation
+### 🔄 Custom Claims Transformation
 
 Claims transformers allow you to modify claims during the validation process, useful for adding roles or permissions based on other claims.
 
@@ -406,7 +406,7 @@ public class RoleBasedPermissionsTransformer : IClaimsTransformer
 validator.SetClaimsTransformer(new RoleBasedPermissionsTransformer());
 ```
 
-### Key Rotation and Multiple Algorithm Support
+### 🔁 Key Rotation and Multiple Algorithm Support
 
 ```csharp
 // Create a key store for multiple keys
@@ -437,7 +437,7 @@ string rsaToken = JwtBuilder.Create()
     .SignRs256((RSA)keyStore["rsa-2023"]);
 ```
 
-### Token Caching for Performance
+### ⚡ Token Caching for Performance
 
 ```csharp
 // Create a cache provider
@@ -460,7 +460,7 @@ var validator = new JwtValidator(cache);
 // and return them for subsequent validation requests for the same token
 ```
 
-## Unity-Specific Features
+## 🎮 Unity-Specific Features
 
 When using SimpleJwt in Unity projects:
 
@@ -568,33 +568,33 @@ public class JsonAotConfig
 }
 ```
 
-## Security Best Practices
+## 🛡️ Security Best Practices
 
-- **Key Management**:
+- **🔑 Key Management**:
   - Use strong keys (at least 256 bits for HMAC, 2048+ bits for RSA, 256+ bits for ECDSA)
   - Store keys securely (e.g., Azure Key Vault, AWS KMS, HashiCorp Vault)
   - Implement key rotation procedures (SimpleJwt supports this via kid header)
   - Never hardcode keys in source code
 
-- **Token Validation**:
+- **✅ Token Validation**:
   - Always validate token lifetime (exp/nbf claims)
   - Validate issuer and audience to prevent token reuse across systems
   - Set appropriate ClockSkew to account for server time differences (5 minutes is common)
   - Consider implementing JTI tracking to prevent replay attacks
 
-- **Token Design**:
+- **📝 Token Design**:
   - Keep tokens small by including only necessary claims
   - Use short expiration times for sensitive operations (minutes, not days)
   - For longer sessions, use refresh tokens with the token refresher
   - Include only non-sensitive data in tokens (they can be decoded easily)
 
-- **Implementation**:
+- **💻 Implementation**:
   - Use HTTPS for all token transmissions
   - Implement token revocation for logout and security incidents
   - Store tokens securely on clients (httpOnly cookies, secure storage)
   - Add rate limiting for token operations to prevent brute force attacks
 
-## Error Handling
+## ⚠️ Error Handling
 
 ```csharp
 // Common error codes and their meanings
@@ -635,7 +635,7 @@ if (!result.IsValid)
 }
 ```
 
-## Contributing
+## 🤝 Contributing
 
 Contributions are welcome! Please follow these steps:
 
@@ -647,7 +647,7 @@ Contributions are welcome! Please follow these steps:
 6. Push to the branch (`git push origin feature/amazing-feature`)
 7. Open a Pull Request
 
-### Development Environment Setup
+### 💻 Development Environment Setup
 
 ```bash
 # Clone the repository
@@ -664,11 +664,11 @@ dotnet build
 dotnet test
 ```
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Performance Considerations
+## ⚡ Performance Considerations
 
 SimpleJwt is designed for high performance with minimal allocations:
 
@@ -678,10 +678,10 @@ SimpleJwt is designed for high performance with minimal allocations:
 - Token size limits prevent DOS attacks
 - JSON serialization is abstracted to allow for platform-specific optimizations
 
-## Package Versions
+## 📦 Package Versions
 
 This library has been updated to use the latest .NET package references as of 2023, ensuring compatibility with modern applications. If you're using an older .NET version, please check the release notes for compatibility information.
 
-## Security Notice
+## 🔒 Security Notice
 
 SimpleJwt includes security upgrades that address known vulnerabilities in dependencies. When upgrading, we recommend always checking for the latest version which will include security patches. 
