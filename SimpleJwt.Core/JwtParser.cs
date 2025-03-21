@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using SimpleJwt.Abstractions;
 using SimpleJwt.Core.Utilities;
+using SimpleJwt.Abstractions.Serialization;
 
 namespace SimpleJwt.Core
 {
@@ -38,19 +38,12 @@ namespace SimpleJwt.Core
 
             try
             {
-                var headerDict = JsonSerializer.Deserialize<Dictionary<string, object>>(header, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-                var payloadDict = JsonSerializer.Deserialize<Dictionary<string, object>>(payload, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
+                var headerDict = JsonProviderConfiguration.GetProvider().Deserialize<Dictionary<string, object>>(header);
+                var payloadDict = JsonProviderConfiguration.GetProvider().Deserialize<Dictionary<string, object>>(payload);
 
                 return new JwtToken(headerDict, payloadDict, token);
             }
-            catch (JsonException ex)
+            catch (Exception ex) when (ex is not ArgumentNullException && ex is not FormatException)
             {
                 throw new FormatException("JWT token contains invalid JSON.", ex);
             }

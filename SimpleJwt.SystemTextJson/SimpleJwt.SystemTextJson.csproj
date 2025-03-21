@@ -3,29 +3,26 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
-    <Nullable>annotations</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <PackageId>SimpleJwt.Core</PackageId>
+    <PackageId>SimpleJwt.SystemTextJson</PackageId>
     <Version>0.1.0</Version>
     <Authors>SimpleJwt Contributors</Authors>
     <Company>SimpleJwt</Company>
-    <Title>SimpleJwt.Core</Title>
-    <Description>A lightweight, secure, and extensible JWT (JSON Web Token) library for .NET applications.</Description>
-    <PackageTags>jwt;token;authentication;security;validation</PackageTags>
+    <Title>SimpleJwt.SystemTextJson</Title>
+    <Description>System.Text.Json provider for SimpleJwt.</Description>
+    <PackageTags>jwt;token;authentication;security;validation;json;system.text.json</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageProjectUrl>https://github.com/yourusername/simple-jwt</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/yourusername/simple-jwt</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageReleaseNotes>Initial release</PackageReleaseNotes>
-    <Copyright>Copyright (c) 2023 SimpleJwt Contributors</Copyright>
-    <WarningsAsErrors></WarningsAsErrors>
-    <NoWarn>CS8625</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="..\README.md" Pack="true" PackagePath="\" />
     <None Include="..\LICENSE" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="9.0.3" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.3" />
   </ItemGroup>
 
   <ItemGroup>

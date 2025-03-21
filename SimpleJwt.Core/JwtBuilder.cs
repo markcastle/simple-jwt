@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
+using SimpleJwt.Abstractions.Serialization;
 
 namespace SimpleJwt.Core
 {
@@ -321,8 +321,8 @@ namespace SimpleJwt.Core
         /// <returns>The signed JWT token.</returns>
         private string SignWithAlgorithm(HMAC algorithm)
         {
-            string headerJson = JsonSerializer.Serialize(_header);
-            string payloadJson = JsonSerializer.Serialize(_payload);
+            string headerJson = JsonProviderConfiguration.GetProvider().Serialize(_header);
+            string payloadJson = JsonProviderConfiguration.GetProvider().Serialize(_payload);
 
             string headerBase64 = JwtBase64UrlEncoder.Encode(headerJson);
             string payloadBase64 = JwtBase64UrlEncoder.Encode(payloadJson);
@@ -344,8 +344,8 @@ namespace SimpleJwt.Core
         {
             _header[JwtConstants.HeaderAlgorithm] = JwtConstants.AlgorithmNone;
 
-            string headerJson = JsonSerializer.Serialize(_header);
-            string payloadJson = JsonSerializer.Serialize(_payload);
+            string headerJson = JsonProviderConfiguration.GetProvider().Serialize(_header);
+            string payloadJson = JsonProviderConfiguration.GetProvider().Serialize(_payload);
 
             string headerBase64 = JwtBase64UrlEncoder.Encode(headerJson);
             string payloadBase64 = JwtBase64UrlEncoder.Encode(payloadJson);
@@ -403,8 +403,8 @@ namespace SimpleJwt.Core
 
         private string SignWithRsa(RSA rsa, HashAlgorithmName hashAlgorithm)
         {
-            string headerJson = JsonSerializer.Serialize(_header);
-            string payloadJson = JsonSerializer.Serialize(_payload);
+            string headerJson = JsonProviderConfiguration.GetProvider().Serialize(_header);
+            string payloadJson = JsonProviderConfiguration.GetProvider().Serialize(_payload);
 
             string headerBase64 = JwtBase64UrlEncoder.Encode(headerJson);
             string payloadBase64 = JwtBase64UrlEncoder.Encode(payloadJson);
@@ -468,8 +468,8 @@ namespace SimpleJwt.Core
 
         private string SignWithEcdsa(ECDsa ecdsa, HashAlgorithmName hashAlgorithm)
         {
-            string headerJson = JsonSerializer.Serialize(_header);
-            string payloadJson = JsonSerializer.Serialize(_payload);
+            string headerJson = JsonProviderConfiguration.GetProvider().Serialize(_header);
+            string payloadJson = JsonProviderConfiguration.GetProvider().Serialize(_payload);
 
             string headerBase64 = JwtBase64UrlEncoder.Encode(headerJson);
             string payloadBase64 = JwtBase64UrlEncoder.Encode(payloadJson);

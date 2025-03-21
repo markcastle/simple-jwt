@@ -2,8 +2,10 @@ using System;
 using System.Text;
 using Xunit;
 using SimpleJwt.Abstractions;
+using SimpleJwt.Abstractions.Serialization;
 using SimpleJwt.Abstractions.Validation;
 using SimpleJwt.Core;
+using SimpleJwt.SystemTextJson.Serialization;
 
 namespace SimpleJwt.Tests
 {
@@ -18,6 +20,9 @@ namespace SimpleJwt.Tests
         /// </summary>
         public JwtBasicTests()
         {
+            // Set up the JSON provider
+            JsonProviderConfiguration.SetProvider(new SystemTextJsonProvider());
+            
             // Initialize the factories with default implementations
             SimpleJwtDefaults.Initialize();
         }

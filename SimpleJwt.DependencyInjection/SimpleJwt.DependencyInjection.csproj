@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>SimpleJwt.DependencyInjection</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>SimpleJwt Contributors</Authors>
+    <Company>SimpleJwt</Company>
+    <Title>SimpleJwt.DependencyInjection</Title>
+    <Description>Microsoft Dependency Injection extensions for SimpleJwt.</Description>
+    <PackageTags>jwt;token;authentication;security;validation;di;dependency-injection;microsoft-di</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\LICENSE" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SimpleJwt.Abstractions\SimpleJwt.Abstractions.csproj" />
+    <ProjectReference Include="..\SimpleJwt.Core\SimpleJwt.Core.csproj" />
+  </ItemGroup>
+
+  <!-- Conditionally reference the SystemTextJson project if it exists -->
+  <PropertyGroup Condition="Exists('..\SimpleJwt.SystemTextJson\SimpleJwt.SystemTextJson.csproj')">
+    <DefineConstants>$(DefineConstants);SYSTEMTEXTJSON_AVAILABLE</DefineConstants>
+  </PropertyGroup>
+  
+  <ItemGroup Condition="Exists('..\SimpleJwt.SystemTextJson\SimpleJwt.SystemTextJson.csproj')">
+    <ProjectReference Include="..\SimpleJwt.SystemTextJson\SimpleJwt.SystemTextJson.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,6 +1,6 @@
 # SimpleJwt
 
-A lightweight, secure, and extensible JWT (JSON Web Token) library for .NET applications, designed with performance and security as top priorities.
+A lightweight, secure, and extensible JWT (JSON Web Token) library for .NET applications, designed with performance and security as top priorities. Supports both regular .NET applications and Unity game development.
 
 ## Features
 
@@ -25,6 +25,11 @@ A lightweight, secure, and extensible JWT (JSON Web Token) library for .NET appl
   - Caching layer for parsed tokens and validation results
   - Efficient token parsing and validation with minimal allocations
   - Configurable memory limits to prevent DOS attacks
+- **Unity Compatibility**:
+  - Abstracted JSON serialization layer with support for both System.Text.Json and Newtonsoft.Json
+  - Compatible with Unity's IL2CPP scripting backend
+  - Minimal dependencies for easier integration with Unity projects
+  - Coroutine-based API for async operations in Unity
 
 ## Installation
 
@@ -35,8 +40,17 @@ dotnet add package SimpleJwt.Core
 # For abstraction interfaces only (DI scenarios)
 dotnet add package SimpleJwt.Abstractions
 
-# For ASP.NET Core integration
-dotnet add package SimpleJwt.AspNetCore
+# For System.Text.Json support (recommended for .NET Core/5+)
+dotnet add package SimpleJwt.SystemTextJson
+
+# For Newtonsoft.Json support
+dotnet add package SimpleJwt.Newtonsoft
+
+# For Unity compatibility
+dotnet add package SimpleJwt.Unity
+
+# For Microsoft DI integration
+dotnet add package SimpleJwt.DependencyInjection
 ```
 
 ## Technical Architecture
@@ -45,9 +59,125 @@ SimpleJwt uses a layered architecture:
 
 - **Abstractions**: Core interfaces and models (`IJwtToken`, `IJwtParser`, `IJwtValidator`, etc.)
 - **Core**: Default implementations of the abstractions
-- **Extensions**: Optional components for specific scenarios
+- **SystemTextJson**: System.Text.Json integration (recommended for .NET Core/5+)
+- **Newtonsoft**: Newtonsoft.Json integration (required for Unity and older .NET Framework)
+- **Unity**: Unity-specific extensions and helpers
+- **DependencyInjection**: Microsoft DI integration
+- **Serialization**: Abstracted JSON serialization with pluggable providers
 
 All components are designed for dependency injection and can be replaced with custom implementations.
+
+## JSON Serialization Abstraction
+
+SimpleJwt uses an abstracted JSON serialization layer that supports different JSON libraries. **You must explicitly configure a JSON provider before using SimpleJwt**:
+
+```csharp
+// Configure JSON serialization for System.Text.Json (default in .NET Core)
+JsonProviderConfiguration.SetProvider(new SystemTextJsonProvider());
+
+// Or configure for Newtonsoft.Json (required for Unity)
+JsonProviderConfiguration.SetProvider(new NewtonsoftJsonProvider());
+
+// Or implement your own provider
+public class CustomJsonProvider : IJsonProvider
+{
+    public string Serialize<T>(T obj) => // Your serialization logic
+    
+    public T Deserialize<T>(string json) => // Your deserialization logic
+    
+    public object Deserialize(string json, Type type) => // Your deserialization logic
+}
+```
+
+### Microsoft Dependency Injection Integration
+
+If you're using Microsoft DI, you can register SimpleJwt services with extensions:
+
+```csharp
+// ASP.NET Core Startup.ConfigureServices or .NET 6+ Program.cs
+services.AddSimpleJwt(options => 
+{
+    options.ValidationParameters = new ValidationParameters
+    {
+        ValidIssuer = "https://myissuer.com",
+        ValidAudience = "https://myapi.com",
+        ValidateLifetime = true
+    };
+});
+
+// Register token lifecycle services
+services.AddTokenRefresher();
+services.AddTokenRevoker();
+
+// Configure JSON serialization - select ONE of the following options:
+
+// Option 1: Use System.Text.Json (recommended for modern .NET applications)
+// Make sure to add a reference to SimpleJwt.SystemTextJson package first
+services.UseSystemTextJson(options => 
+{
+    // Customize System.Text.Json options if needed
+    options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+});
+
+// Option 2: Use Newtonsoft.Json
+// Make sure to add a reference to SimpleJwt.Newtonsoft package first
+services.UseNewtonsoftJson(options => 
+{
+    // Customize Newtonsoft.Json options if needed
+});
+```
+
+This enables scoped resolution of SimpleJwt services:
+
+```csharp
+public class JwtService
+{
+    private readonly IJwtParser _parser;
+    private readonly IJwtValidator _validator;
+    
+    public JwtService(IJwtParser parser, IJwtValidator validator)
+    {
+        _parser = parser;
+        _validator = validator;
+    }
+    
+    public bool ValidateToken(string token)
+    {
+        var parsedToken = _parser.Parse(token);
+        var result = _validator.Validate(parsedToken);
+        return result.IsValid;
+    }
+}
+```
+
+### Unity Integration
+
+For Unity projects, use the SimpleJwt.Unity package which provides a simple initialization method:
+
+```csharp
+// In your initialization code (e.g., Awake or Start method)
+void Awake()
+{
+    // Initialize SimpleJwt for Unity with Newtonsoft.Json
+    SimpleJwtUnityExtensions.InitializeForUnity();
+    
+    // Or if you need custom configuration:
+    JsonProviderConfiguration.SetProvider(new NewtonsoftJsonProvider 
+    {
+        // Configure Newtonsoft.Json settings here
+    });
+}
+```
+
+#### Important Note for Unity Projects
+
+When using SimpleJwt in Unity:
+
+1. Always use the SimpleJwt.Unity package which properly handles JSON serialization compatibility
+2. Make sure to call `SimpleJwtUnityExtensions.InitializeForUnity()` during initialization
+3. Ensure you have the Newtonsoft.Json package installed in your Unity project
+
+The library has been refactored to eliminate any direct dependency on System.Text.Json in the core components, ensuring complete compatibility with Unity's IL2CPP scripting backend.
 
 ## Quick Start
 
@@ -60,7 +190,7 @@ string token = JwtBuilder.Create()
     .SetAudience("https://myapi.com")
     .SetSubject("user123")
     .AddClaim("role", "admin")
-    .AddClaim("permissions", new[] { "read", "write", "delete" }) // Complex objects are automatically serialized
+    .AddClaim("permissions", new[] { "read", "write", "delete" }) // Objects are serialized using the configured JSON provider
     .AddLifetimeClaims(TimeSpan.FromHours(1)) // Adds exp and nbf claims
     .AddJti() // Adds a unique identifier to prevent replay attacks
     .SignHs256(Encoding.UTF8.GetBytes("your-secret-key-with-at-least-32-bytes"));
@@ -82,7 +212,7 @@ IJwtToken parsedToken = parser.Parse(token);
 // Access token parts
 string algorithm = parsedToken.GetHeaderClaim<string>(JwtConstants.HeaderAlgorithm);
 string subject = parsedToken.GetClaim<string>(JwtConstants.ClaimSubject);
-string[] roles = parsedToken.GetClaim<string[]>("roles");
+string[] roles = parsedToken.GetClaim<string[]>("roles"); // Deserialized using the configured JSON provider
 DateTimeOffset expiration = DateTimeOffset.FromUnixTimeSeconds(
     parsedToken.GetClaim<long>(JwtConstants.ClaimExpiration));
 
@@ -107,6 +237,15 @@ if (result.IsValid)
     if (parsedToken.TryGetClaim<string>("role", out var role))
     {
         Console.WriteLine($"User has role: {role}");
+    }
+    
+    // Get custom objects using the configured JSON provider
+    if (parsedToken.TryGetClaim<string[]>("permissions", out var permissions))
+    {
+        foreach (var permission in permissions)
+        {
+            Console.WriteLine($"Has permission: {permission}");
+        }
     }
 }
 else
@@ -321,56 +460,110 @@ var validator = new JwtValidator(cache);
 // and return them for subsequent validation requests for the same token
 ```
 
-### ASP.NET Core Integration
+## Unity-Specific Features
+
+When using SimpleJwt in Unity projects:
+
+### Setup
 
 ```csharp
-// In Program.cs or Startup.cs
-builder.Services.AddSimpleJwt(options =>
-{
-    options.TokenValidationParameters = new ValidationParameters
-    {
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        SymmetricSecurityKey = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
-    };
-    
-    options.AddTokenRefresher();
-    options.AddTokenRevoker();
-    options.AddInMemoryTokenCache();
-});
+// In your initialization script
+using SimpleJwt.Unity;
+using SimpleJwt.Newtonsoft.Serialization;
 
-// In controller
-[ApiController]
-[Route("api/[controller]")]
-public class AuthController : ControllerBase
+public class JwtInitializer : MonoBehaviour
 {
-    private readonly IJwtBuilder _jwtBuilder;
-    private readonly ITokenRefresher _tokenRefresher;
-    
-    public AuthController(IJwtBuilder jwtBuilder, ITokenRefresher tokenRefresher)
+    void Awake()
     {
-        _jwtBuilder = jwtBuilder;
-        _tokenRefresher = tokenRefresher;
+        // Initialize SimpleJwt for Unity (uses Newtonsoft.Json by default)
+        SimpleJwtUnityExtensions.InitializeForUnity();
+        
+        // Or manually configure if needed
+        JsonProviderConfiguration.SetProvider(new NewtonsoftJsonProvider());
+    }
+}
+```
+
+### Using Coroutines for Async Operations
+
+SimpleJwt.Unity provides coroutine-based extensions for easier integration with Unity:
+
+```csharp
+// Example of validating a token using a coroutine
+public class TokenValidator : MonoBehaviour
+{
+    private IJwtValidator _validator;
+    
+    void Start()
+    {
+        _validator = new JwtValidator();
+        StartCoroutine(ValidateTokenProcess("your-token-here"));
     }
     
-    [HttpPost("login")]
-    public IActionResult Login(LoginModel model)
+    private IEnumerator ValidateTokenProcess(string token)
     {
-        if (ValidUser(model.Username, model.Password))
+        yield return _validator.ValidateTokenCoroutine(token, result => 
         {
-            string token = _jwtBuilder
-                .SetSubject(model.Username)
-                .AddClaim("role", GetUserRole(model.Username))
-                .AddLifetimeClaims(TimeSpan.FromHours(1))
-                .SignHs256();
-                
-            string refreshToken = _tokenRefresher.CreateRefreshToken(
-                token, TimeSpan.FromDays(30));
-                
-            return Ok(new { AccessToken = token, RefreshToken = refreshToken });
-        }
-        
-        return Unauthorized();
+            if (result.IsValid)
+            {
+                Debug.Log("Token is valid!");
+            }
+            else
+            {
+                Debug.LogError($"Token validation failed: {result.Errors[0].Message}");
+            }
+        });
+    }
+}
+
+// Example of refreshing a token using a coroutine
+public class TokenRefresher : MonoBehaviour
+{
+    private ITokenRefresher _refresher;
+    
+    void Start()
+    {
+        _refresher = new TokenRefresher();
+        StartCoroutine(RefreshTokenProcess("access-token", "refresh-token"));
+    }
+    
+    private IEnumerator RefreshTokenProcess(string accessToken, string refreshToken)
+    {
+        yield return _refresher.RefreshTokenCoroutine(accessToken, refreshToken, result => 
+        {
+            if (result.IsSuccess)
+            {
+                Debug.Log($"New access token: {result.AccessToken}");
+                Debug.Log($"New refresh token: {result.RefreshToken}");
+            }
+            else
+            {
+                Debug.LogError($"Token refresh failed: {result.Error}");
+            }
+        });
+    }
+}
+```
+
+### IL2CPP Considerations
+
+When using IL2CPP scripting backend in Unity:
+
+```csharp
+// For IL2CPP compatibility, register AOT serialization types
+using SimpleJwt.Newtonsoft.Serialization;
+using UnityEngine.Scripting;
+
+[Preserve]
+public class JsonAotConfig
+{
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    static void Initialize()
+    {
+        // Register types that need to be serialized/deserialized
+        NewtonsoftJsonProvider.RegisterForAot<Dictionary<string, string>>();
+        NewtonsoftJsonProvider.RegisterForAot<List<string>>();
+        NewtonsoftJsonProvider.RegisterForAot<YourCustomType>();
     }
 }
 ```
@@ -483,4 +676,12 @@ SimpleJwt is designed for high performance with minimal allocations:
 - Caching is available for frequently validated tokens
 - Async methods use proper `ValueTask` where appropriate to reduce allocations
 - Token size limits prevent DOS attacks
-- Benchmarks show processing of >10,000 tokens per second on modest hardware 
+- JSON serialization is abstracted to allow for platform-specific optimizations
+
+## Package Versions
+
+This library has been updated to use the latest .NET package references as of 2023, ensuring compatibility with modern applications. If you're using an older .NET version, please check the release notes for compatibility information.
+
+## Security Notice
+
+SimpleJwt includes security upgrades that address known vulnerabilities in dependencies. When upgrading, we recommend always checking for the latest version which will include security patches. 

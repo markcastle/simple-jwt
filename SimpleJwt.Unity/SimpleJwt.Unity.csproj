@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>Unity integration for the SimpleJwt library.</Description>
+    <PackageTags>jwt;token;authentication;security;unity;gamedev</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SimpleJwt.Abstractions\SimpleJwt.Abstractions.csproj" />
+    <ProjectReference Include="..\SimpleJwt.Core\SimpleJwt.Core.csproj" />
+    <ProjectReference Include="..\SimpleJwt.Newtonsoft\SimpleJwt.Newtonsoft.csproj" />
+  </ItemGroup>
+
+</Project> 
