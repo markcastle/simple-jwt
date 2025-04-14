@@ -39,11 +39,11 @@
   - [x] Key ID (kid) header validation
   - [x] Invalid key scenarios
 
-- [ ] Token Security Tests
-  - [ ] Replay attack prevention
-  - [ ] Token substitution prevention
-  - [ ] Signature tampering detection
-  - [ ] Claim tampering detection
+- [x] Token Security Tests
+  - [x] Replay attack prevention
+  - [x] Token substitution prevention
+  - [x] Signature tampering detection
+  - [x] Claim tampering detection
 
 ### RFC Compliance
 - [ ] Core RFC Compliance Tests
@@ -131,20 +131,20 @@
 
 ## Progress Tracking
 - Total Tasks: 60
-- Completed Tasks: 26
+- Completed Tasks: 30
 - Critical Priority: 20/20
-- High Priority: 6/15
+- High Priority: 10/15
 - Medium Priority: 0/15
 - Low Priority: 0/10
 
 Last Updated: 2024-03-19 
 
 ## Recent Updates
-- Completed key management tests with comprehensive coverage of:
-  - Key rotation with mixed key types (HMAC, RSA, ECDSA)
-  - Key type mismatch validation
-  - Multiple active keys handling
-  - Key ID validation
-- Fixed key type validation in ShouldFailValidationWithWrongKeyType test
-- All 44 tests passing after fixes
+- Completed all Token Security Tests with comprehensive coverage of:
+  - Replay attack prevention using JTI validation
+  - Token type substitution prevention
+  - Signature tampering detection with constant-time comparison
+  - Claim tampering detection
+- Fixed signature tampering test to use a valid Base64URL-encoded signature
+- All 48 tests passing after security test implementation
 - Remaining warnings are related to null reference checks in test files 

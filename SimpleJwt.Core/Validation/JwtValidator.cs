@@ -73,6 +73,16 @@ namespace SimpleJwt.Core.Validation
 
             var result = ValidationResult.Success();
 
+            // Validate token type
+            if (parameters.RequireTokenType)
+            {
+                var tokenTypeResult = ValidateTokenType(token, parameters);
+                if (!tokenTypeResult.IsValid)
+                {
+                    return tokenTypeResult;
+                }
+            }
+
             // Validate lifetime
             if (parameters.ValidateLifetime)
             {
@@ -498,7 +508,10 @@ namespace SimpleJwt.Core.Validation
 
         private ValidationResult ValidateSignature(IJwtToken token, byte[] key)
         {
-            string algorithm = token.Header.GetStringOrDefault(Abstractions.JwtConstants.HeaderAlgorithm, string.Empty);
+            if (!token.TryGetHeaderClaim<string>(JwtConstants.HeaderAlgorithm, out var algorithm))
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidSignature, "Token does not contain an algorithm header.");
+            }
 
             // No algorithm specified
             if (string.IsNullOrEmpty(algorithm))
@@ -507,15 +520,9 @@ namespace SimpleJwt.Core.Validation
             }
 
             // None algorithm (no signature)
-            if (algorithm == Abstractions.JwtConstants.AlgorithmNone)
+            if (algorithm == JwtConstants.AlgorithmNone)
             {
-                // If using the 'none' algorithm, verify there's no signature
-                if (!string.IsNullOrEmpty(token.Signature))
-                {
-                    return ValidationResult.Failure(ValidationCodes.InvalidSignature, "Token uses 'none' algorithm but has a signature.");
-                }
-
-                return ValidationResult.Success();
+                return ValidationResult.Failure(ValidationCodes.InvalidSignature, "Token uses 'none' algorithm but signature validation is required.");
             }
 
             // Verify the signature is present
@@ -525,15 +532,15 @@ namespace SimpleJwt.Core.Validation
             }
 
             // HMAC algorithms
-            if (algorithm == Abstractions.JwtConstants.AlgorithmHs256)
+            if (algorithm == JwtConstants.AlgorithmHs256)
             {
                 return VerifyHmacSignature(token, SHA256.Create(), key);
             }
-            else if (algorithm == Abstractions.JwtConstants.AlgorithmHs384)
+            else if (algorithm == JwtConstants.AlgorithmHs384)
             {
                 return VerifyHmacSignature(token, SHA384.Create(), key);
             }
-            else if (algorithm == Abstractions.JwtConstants.AlgorithmHs512)
+            else if (algorithm == JwtConstants.AlgorithmHs512)
             {
                 return VerifyHmacSignature(token, SHA512.Create(), key);
             }
@@ -553,14 +560,16 @@ namespace SimpleJwt.Core.Validation
                 return ValidationResult.Failure(ValidationCodes.InvalidSignature, "Token uses 'none' algorithm but has a signature.");
             }
 
+            // Get the header and payload parts from the raw token
             var parts = token.RawToken.Split('.');
             if (parts.Length != 3)
             {
                 return ValidationResult.Failure(ValidationCodes.InvalidToken, "Token must contain three parts separated by dots.");
             }
 
+            // Use the original header and payload parts for verification
             string data = $"{parts[0]}.{parts[1]}";
-            string signature = parts[2];
+            string signature = parts[2]; // Use the signature from the token parts
 
             byte[] signatureBytes = JwtBase64UrlEncoder.DecodeToBytes(signature);
             byte[] dataBytes = Encoding.UTF8.GetBytes(data);
@@ -703,6 +712,26 @@ namespace SimpleJwt.Core.Validation
             if (!isValid)
             {
                 return ValidationResult.Failure(ValidationCodes.InvalidSignature, "Token signature is invalid.");
+            }
+
+            return ValidationResult.Success();
+        }
+
+        private ValidationResult ValidateTokenType(IJwtToken token, ValidationParameters parameters)
+        {
+            if (!token.TryGetHeaderClaim<string>(JwtConstants.HeaderType, out var tokenType))
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidClaimValue, $"Token is missing the required '{JwtConstants.HeaderType}' header claim.");
+            }
+
+            if (string.IsNullOrEmpty(tokenType))
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidClaimValue, "Token type cannot be null or empty.");
+            }
+
+            if (tokenType != parameters.RequiredTokenType)
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidClaimValue, $"Token type '{tokenType}' does not match the required type '{parameters.RequiredTokenType}'.");
             }
 
             return ValidationResult.Success();
