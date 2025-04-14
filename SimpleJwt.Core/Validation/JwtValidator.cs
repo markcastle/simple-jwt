@@ -19,8 +19,6 @@ namespace SimpleJwt.Core.Validation
         private readonly List<Func<IJwtToken, ValidationResult>> _validators;
         private readonly List<Func<IJwtToken, Task<ValidationResult>>> _asyncValidators;
         private byte[] _hmacKey;
-        private RSA _rsaPublicKey;
-        private ECDsa _ecdsaPublicKey;
         private TimeSpan _clockSkew;
         private string _issuer;
         private string _audience;
@@ -50,15 +48,19 @@ namespace SimpleJwt.Core.Validation
                 throw new ArgumentException("Token cannot be null or empty.", nameof(token));
             }
 
-            try
+            IJwtToken parsedToken = _parser.Parse(token);
+            var parameters = new ValidationParameters
             {
-                IJwtToken parsedToken = _parser.Parse(token);
-                return Validate(parsedToken, new ValidationParameters());
-            }
-            catch (Exception ex)
-            {
-                return ValidationResult.Failure(ValidationCodes.InvalidToken, $"Failed to parse token: {ex.Message}");
-            }
+                ValidateLifetime = _validateExpiration,
+                ValidateIssuer = !string.IsNullOrEmpty(_issuer),
+                ValidIssuer = _issuer,
+                ValidateAudience = !string.IsNullOrEmpty(_audience),
+                ValidAudience = _audience,
+                ValidateSignature = true,
+                ClockSkew = _clockSkew
+            };
+
+            return Validate(parsedToken, parameters);
         }
 
         /// <inheritdoc />
@@ -69,14 +71,9 @@ namespace SimpleJwt.Core.Validation
                 throw new ArgumentNullException(nameof(token));
             }
 
-            if (parameters == null)
-            {
-                throw new ArgumentNullException(nameof(parameters));
-            }
+            var result = ValidationResult.Success();
 
-            ValidationResult result = ValidationResult.Success();
-
-            // Validate expiration
+            // Validate lifetime
             if (parameters.ValidateLifetime)
             {
                 var expirationResult = ValidateExpirationTime(token);
@@ -84,11 +81,7 @@ namespace SimpleJwt.Core.Validation
                 {
                     return expirationResult;
                 }
-            }
 
-            // Validate not before
-            if (parameters.ValidateLifetime)
-            {
                 var notBeforeResult = ValidateNotBeforeTime(token);
                 if (!notBeforeResult.IsValid)
                 {
@@ -117,9 +110,60 @@ namespace SimpleJwt.Core.Validation
             }
 
             // Validate signature
-            if (parameters.ValidateSignature && parameters.SymmetricSecurityKey != null)
+            if (parameters.ValidateSignature)
             {
-                var signatureResult = ValidateSignature(token, parameters.SymmetricSecurityKey);
+                ValidationResult signatureResult;
+                
+                // Check if we have a key ID in the header
+                if (token.TryGetHeaderClaim<string>(JwtConstants.HeaderKeyId, out var keyId))
+                {
+                    // If we have a key ID, try to get the corresponding key from the SecurityKeys dictionary
+                    if (parameters.SecurityKeys != null && parameters.SecurityKeys.TryGetValue(keyId, out var key))
+                    {
+                        if (key is byte[] symmetricKey)
+                        {
+                            signatureResult = ValidateSignature(token, symmetricKey);
+                        }
+                        else if (key is RSA rsaKey)
+                        {
+                            signatureResult = ValidateRsaSignature(token, rsaKey);
+                        }
+                        else if (key is ECDsa ecdsaKey)
+                        {
+                            signatureResult = ValidateEcdsaSignature(token, ecdsaKey);
+                        }
+                        else
+                        {
+                            signatureResult = ValidationResult.Failure(ValidationCodes.InvalidSignature, $"Unsupported key type for key ID: {keyId}");
+                        }
+                    }
+                    else
+                    {
+                        signatureResult = ValidationResult.Failure(ValidationCodes.InvalidSignature, $"Key ID not found: {keyId}");
+                    }
+                }
+                // If no key ID, fall back to the default key
+                else if (parameters.SymmetricSecurityKey != null)
+                {
+                    signatureResult = ValidateSignature(token, parameters.SymmetricSecurityKey);
+                }
+                else if (parameters.RsaSecurityKey != null)
+                {
+                    signatureResult = ValidateRsaSignature(token, parameters.RsaSecurityKey);
+                }
+                else if (parameters.EcdsaSecurityKey != null)
+                {
+                    signatureResult = ValidateEcdsaSignature(token, parameters.EcdsaSecurityKey);
+                }
+                else if (_hmacKey != null)
+                {
+                    signatureResult = ValidateSignature(token, _hmacKey);
+                }
+                else
+                {
+                    signatureResult = ValidationResult.Failure(ValidationCodes.InvalidSignature, "No valid security key found for validation");
+                }
+
                 if (!signatureResult.IsValid)
                 {
                     return signatureResult;
@@ -578,6 +622,90 @@ namespace SimpleJwt.Core.Validation
             }
             
             return result == 0;
+        }
+
+        private ValidationResult ValidateRsaSignature(IJwtToken token, RSA rsa)
+        {
+            if (!token.TryGetHeaderClaim<string>(JwtConstants.HeaderAlgorithm, out var algorithm))
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidSignature, "Token does not contain an algorithm header.");
+            }
+
+            if (algorithm == JwtConstants.AlgorithmNone)
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidSignature, "Token uses 'none' algorithm but has a signature.");
+            }
+
+            var parts = token.RawToken.Split('.');
+            if (parts.Length != 3)
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidToken, "Token must contain three parts separated by dots.");
+            }
+
+            string data = $"{parts[0]}.{parts[1]}";
+            string signature = parts[2];
+
+            byte[] signatureBytes = JwtBase64UrlEncoder.DecodeToBytes(signature);
+            byte[] dataBytes = Encoding.UTF8.GetBytes(data);
+
+            HashAlgorithmName hashAlgorithm = algorithm switch
+            {
+                JwtConstants.AlgorithmRs256 => HashAlgorithmName.SHA256,
+                JwtConstants.AlgorithmRs384 => HashAlgorithmName.SHA384,
+                JwtConstants.AlgorithmRs512 => HashAlgorithmName.SHA512,
+                _ => throw new InvalidOperationException($"Unsupported RSA algorithm: {algorithm}")
+            };
+
+            bool isValid = rsa.VerifyData(dataBytes, signatureBytes, hashAlgorithm, RSASignaturePadding.Pkcs1);
+
+            if (!isValid)
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidSignature, "Token signature is invalid.");
+            }
+
+            return ValidationResult.Success();
+        }
+
+        private ValidationResult ValidateEcdsaSignature(IJwtToken token, ECDsa ecdsa)
+        {
+            if (!token.TryGetHeaderClaim<string>(JwtConstants.HeaderAlgorithm, out var algorithm))
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidSignature, "Token does not contain an algorithm header.");
+            }
+
+            if (algorithm == JwtConstants.AlgorithmNone)
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidSignature, "Token uses 'none' algorithm but has a signature.");
+            }
+
+            var parts = token.RawToken.Split('.');
+            if (parts.Length != 3)
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidToken, "Token must contain three parts separated by dots.");
+            }
+
+            string data = $"{parts[0]}.{parts[1]}";
+            string signature = parts[2];
+
+            byte[] signatureBytes = JwtBase64UrlEncoder.DecodeToBytes(signature);
+            byte[] dataBytes = Encoding.UTF8.GetBytes(data);
+
+            HashAlgorithmName hashAlgorithm = algorithm switch
+            {
+                JwtConstants.AlgorithmEs256 => HashAlgorithmName.SHA256,
+                JwtConstants.AlgorithmEs384 => HashAlgorithmName.SHA384,
+                JwtConstants.AlgorithmEs512 => HashAlgorithmName.SHA512,
+                _ => throw new InvalidOperationException($"Unsupported ECDSA algorithm: {algorithm}")
+            };
+
+            bool isValid = ecdsa.VerifyData(dataBytes, signatureBytes, hashAlgorithm);
+
+            if (!isValid)
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidSignature, "Token signature is invalid.");
+            }
+
+            return ValidationResult.Success();
         }
     }
 } 
