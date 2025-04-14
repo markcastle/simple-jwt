@@ -20,9 +20,9 @@
   - [x] Complex JSON claim handling
 
 - [ ] Token Parsing Tests
-  - [ ] Parse valid tokens of all supported formats
-  - [ ] Parse with different JSON serialization providers
-  - [ ] Error cases (malformed tokens, invalid encoding)
+  - [x] Parse valid tokens of all supported formats
+  - [x] Parse with different JSON serialization providers
+  - [x] Error cases (malformed tokens, invalid encoding)
 
 - [ ] Token Validation Tests
   - [ ] Signature validation for each algorithm
@@ -130,8 +130,8 @@
 
 ## Progress Tracking
 - Total Tasks: 60
-- Completed Tasks: 15
-- Critical Priority: 10/20
+- Completed Tasks: 18
+- Critical Priority: 13/20
 - High Priority: 5/15
 - Medium Priority: 0/15
 - Low Priority: 0/10
