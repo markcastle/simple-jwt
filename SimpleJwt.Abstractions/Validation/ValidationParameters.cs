@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using SimpleJwt.Abstractions.TokenLifetime;
 
 namespace SimpleJwt.Abstractions.Validation
 {
@@ -128,6 +129,16 @@ namespace SimpleJwt.Abstractions.Validation
         /// Gets or sets the required token type in the 'typ' header.
         /// </summary>
         public string RequiredTokenType { get; set; } = "JWT";
+        
+        /// <summary>
+        /// Gets or sets a value indicating whether to validate if the token has been revoked.
+        /// </summary>
+        public bool ValidateRevocation { get; set; } = false;
+        
+        /// <summary>
+        /// Gets or sets the token revoker used to check if tokens have been revoked.
+        /// </summary>
+        public ITokenRevoker TokenRevoker { get; set; }
         
         /// <summary>
         /// Gets or sets a delegate for custom token validation.

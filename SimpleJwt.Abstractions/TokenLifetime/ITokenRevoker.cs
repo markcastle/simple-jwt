@@ -1,8 +1,9 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
-namespace SimpleJwt.Core.TokenLifetime
+namespace SimpleJwt.Abstractions.TokenLifetime
 {
     /// <summary>
     /// Provides functionality to revoke JWT tokens.
@@ -74,5 +75,22 @@ namespace SimpleJwt.Core.TokenLifetime
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous revocation operation. The task result contains the number of tokens revoked.</returns>
         Task<int> RevokeAllForUserAsync(string userId, string reason = null, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Revokes multiple tokens at once.
+        /// </summary>
+        /// <param name="tokens">The tokens to revoke.</param>
+        /// <param name="reason">The reason for revocation.</param>
+        /// <returns>The number of tokens successfully revoked.</returns>
+        int RevokeTokens(IEnumerable<string> tokens, string reason = null);
+
+        /// <summary>
+        /// Asynchronously revokes multiple tokens at once.
+        /// </summary>
+        /// <param name="tokens">The tokens to revoke.</param>
+        /// <param name="reason">The reason for revocation.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous revocation operation. The task result contains the number of tokens successfully revoked.</returns>
+        Task<int> RevokeTokensAsync(IEnumerable<string> tokens, string reason = null, CancellationToken cancellationToken = default);
     }
 } 

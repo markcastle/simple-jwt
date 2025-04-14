@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SimpleJwt.Abstractions;
 using SimpleJwt.Abstractions.Validation;
+using SimpleJwt.Abstractions.TokenLifetime;
 using SimpleJwt.Core.Utilities;
 
 namespace SimpleJwt.Core.Validation
@@ -88,6 +89,16 @@ namespace SimpleJwt.Core.Validation
                 if (!tokenTypeResult.IsValid)
                 {
                     return tokenTypeResult;
+                }
+            }
+
+            // Validate revocation if requested
+            if (parameters.ValidateRevocation && parameters.TokenRevoker != null)
+            {
+                var revocationResult = ValidateRevocation(token, parameters.TokenRevoker);
+                if (!revocationResult.IsValid)
+                {
+                    return revocationResult;
                 }
             }
 
@@ -256,6 +267,17 @@ namespace SimpleJwt.Core.Validation
 
             // Check cancellation before proceeding
             cancellationToken.ThrowIfCancellationRequested();
+
+            // Validate revocation if requested
+            if (parameters.ValidateRevocation && parameters.TokenRevoker != null)
+            {
+                bool isRevoked = await parameters.TokenRevoker.IsRevokedAsync(token.RawToken, cancellationToken).ConfigureAwait(false);
+                if (isRevoked)
+                {
+                    string reason = await parameters.TokenRevoker.GetRevocationReasonAsync(token.RawToken, cancellationToken).ConfigureAwait(false);
+                    return ValidationResult.Failure(ValidationCodes.TokenRevoked, $"Token has been revoked. Reason: {reason ?? "Not specified"}");
+                }
+            }
 
             // First validate the token normally
             ValidationResult result = Validate(token, parameters);
@@ -761,6 +783,33 @@ namespace SimpleJwt.Core.Validation
             if (tokenType != parameters.RequiredTokenType)
             {
                 return ValidationResult.Failure(ValidationCodes.InvalidClaimValue, $"Token type '{tokenType}' does not match the required type '{parameters.RequiredTokenType}'.");
+            }
+
+            return ValidationResult.Success();
+        }
+
+        /// <summary>
+        /// Validates that a token has not been revoked.
+        /// </summary>
+        /// <param name="token">The token to validate.</param>
+        /// <param name="revoker">The token revoker to use for validation.</param>
+        /// <returns>A validation result indicating whether the token is valid.</returns>
+        private ValidationResult ValidateRevocation(IJwtToken token, ITokenRevoker revoker)
+        {
+            if (token == null)
+            {
+                throw new ArgumentNullException(nameof(token));
+            }
+
+            if (revoker == null)
+            {
+                throw new ArgumentNullException(nameof(revoker));
+            }
+
+            if (revoker.IsRevoked(token.RawToken))
+            {
+                string reason = revoker.GetRevocationReason(token.RawToken);
+                return ValidationResult.Failure(ValidationCodes.TokenRevoked, $"Token has been revoked. Reason: {reason ?? "Not specified"}");
             }
 
             return ValidationResult.Success();

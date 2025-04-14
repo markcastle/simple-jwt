@@ -54,5 +54,10 @@ namespace SimpleJwt.Abstractions.Validation
         /// The JTI claim has already been used (replay attack prevention).
         /// </summary>
         public const string JtiAlreadyUsed = "jti_already_used";
+        
+        /// <summary>
+        /// The token has been revoked.
+        /// </summary>
+        public const string TokenRevoked = "token_revoked";
     }
 } 
