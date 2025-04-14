@@ -35,8 +35,8 @@ namespace SimpleJwt.Tests
         public void ShouldCreateAndParseToken()
         {
             // Arrange
-            var builder = JwtBuilderFactory.Create();
-            var parser = JwtParserFactory.Create();
+            IJwtBuilder builder = JwtBuilderFactory.Create();
+            IJwtParser parser = JwtParserFactory.Create();
             
             // Act
             string token = builder
@@ -49,7 +49,7 @@ namespace SimpleJwt.Tests
                 .AddClaim("custom-claim", "custom-value")
                 .CreateUnsecured();
 
-            var jwtToken = parser.Parse(token);
+            IJwtToken jwtToken = parser.Parse(token);
 
             // Assert
             Assert.NotNull(jwtToken);
@@ -67,9 +67,9 @@ namespace SimpleJwt.Tests
         public void ShouldSignAndValidateToken()
         {
             // Arrange
-            var builder = JwtBuilderFactory.Create();
-            var validator = JwtValidatorFactory.Create();
-            byte[] key = Encoding.UTF8.GetBytes("this-is-a-test-key-which-needs-to-be-at-least-32-bytes-long");
+            IJwtBuilder builder = JwtBuilderFactory.Create();
+            IJwtValidator validator = JwtValidatorFactory.Create();
+            byte[] key = "this-is-a-test-key-which-needs-to-be-at-least-32-bytes-long"u8.ToArray();
             
             // Act
             string token = builder
@@ -80,7 +80,7 @@ namespace SimpleJwt.Tests
                 .SetIssuedNow()
                 .SignHmacSha256(key);
 
-            var result = validator
+            ValidationResult result = validator
                 .SetHmacKey(key)
                 .SetIssuer("test-issuer")
                 .SetAudience("test-audience")
@@ -100,10 +100,10 @@ namespace SimpleJwt.Tests
         public void ShouldFailValidationWithInvalidSignature()
         {
             // Arrange
-            var builder = JwtBuilderFactory.Create();
-            var validator = JwtValidatorFactory.Create();
-            byte[] key = Encoding.UTF8.GetBytes("this-is-a-test-key-which-needs-to-be-at-least-32-bytes-long");
-            byte[] wrongKey = Encoding.UTF8.GetBytes("this-is-a-wrong-key-which-is-also-at-least-32-bytes-long");
+            IJwtBuilder builder = JwtBuilderFactory.Create();
+            IJwtValidator validator = JwtValidatorFactory.Create();
+            byte[] key = "this-is-a-test-key-which-needs-to-be-at-least-32-bytes-long"u8.ToArray();
+            byte[] wrongKey = "this-is-a-wrong-key-which-is-also-at-least-32-bytes-long"u8.ToArray();
             
             // Act
             string token = builder
@@ -114,7 +114,7 @@ namespace SimpleJwt.Tests
                 .SetIssuedNow()
                 .SignHmacSha256(key);
 
-            var result = validator
+            ValidationResult result = validator
                 .SetHmacKey(wrongKey)
                 .SetIssuer("test-issuer")
                 .SetAudience("test-audience")
@@ -135,9 +135,9 @@ namespace SimpleJwt.Tests
         public void ShouldFailValidationWithWrongIssuer()
         {
             // Arrange
-            var builder = JwtBuilderFactory.Create();
-            var validator = JwtValidatorFactory.Create();
-            byte[] key = Encoding.UTF8.GetBytes("this-is-a-test-key-which-needs-to-be-at-least-32-bytes-long");
+            IJwtBuilder builder = JwtBuilderFactory.Create();
+            IJwtValidator validator = JwtValidatorFactory.Create();
+            byte[] key = "this-is-a-test-key-which-needs-to-be-at-least-32-bytes-long"u8.ToArray();
             
             // Act
             string token = builder
@@ -148,7 +148,7 @@ namespace SimpleJwt.Tests
                 .SetIssuedNow()
                 .SignHmacSha256(key);
 
-            var result = validator
+            ValidationResult result = validator
                 .SetHmacKey(key)
                 .SetIssuer("wrong-issuer")
                 .SetAudience("test-audience")
@@ -169,9 +169,9 @@ namespace SimpleJwt.Tests
         public void ShouldFailValidationWithExpiredToken()
         {
             // Arrange
-            var builder = JwtBuilderFactory.Create();
-            var validator = JwtValidatorFactory.Create();
-            byte[] key = Encoding.UTF8.GetBytes("this-is-a-test-key-which-needs-to-be-at-least-32-bytes-long");
+            IJwtBuilder builder = JwtBuilderFactory.Create();
+            IJwtValidator validator = JwtValidatorFactory.Create();
+            byte[] key = "this-is-a-test-key-which-needs-to-be-at-least-32-bytes-long"u8.ToArray();
             
             // Act
             string token = builder
@@ -182,7 +182,7 @@ namespace SimpleJwt.Tests
                 .SetIssuedNow()
                 .SignHmacSha256(key);
 
-            var result = validator
+            ValidationResult result = validator
                 .SetHmacKey(key)
                 .SetIssuer("test-issuer")
                 .SetAudience("test-audience")

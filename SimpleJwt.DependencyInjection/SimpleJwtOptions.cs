@@ -10,6 +10,6 @@ namespace SimpleJwt.DependencyInjection
         /// <summary>
         /// Gets or sets the parameters used to validate JWT tokens.
         /// </summary>
-        public ValidationParameters ValidationParameters { get; set; } = new ValidationParameters();
+        public ValidationParameters ValidationParameters { get; set; } = new();
     }
 } 

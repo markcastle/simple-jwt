@@ -29,7 +29,7 @@ namespace SimpleJwt.DependencyInjection
             this IServiceCollection services,
             Action<SimpleJwtOptions> configureOptions = null)
         {
-            var options = new SimpleJwtOptions();
+            SimpleJwtOptions options = new();
             configureOptions?.Invoke(options);
 
             // Register core services
@@ -39,8 +39,8 @@ namespace SimpleJwt.DependencyInjection
             // Register validator with configuration
             services.TryAddSingleton<IJwtValidator>(sp => 
             {
-                var parser = sp.GetRequiredService<IJwtParser>();
-                var validator = new JwtValidator(parser);
+                IJwtParser parser = sp.GetRequiredService<IJwtParser>();
+                JwtValidator validator = new(parser);
                 
                 if (options.ValidationParameters != null)
                 {
@@ -86,8 +86,8 @@ namespace SimpleJwt.DependencyInjection
         {
             services.TryAddSingleton<ITokenRefresher>(sp => 
             {
-                var validator = sp.GetRequiredService<IJwtValidator>();
-                var parser = sp.GetRequiredService<IJwtParser>();
+                IJwtValidator validator = sp.GetRequiredService<IJwtValidator>();
+                IJwtParser parser = sp.GetRequiredService<IJwtParser>();
                 return new JwtRefresher(validator, parser);
             });
             return services;
@@ -102,7 +102,7 @@ namespace SimpleJwt.DependencyInjection
         {
             services.TryAddSingleton<ITokenRevoker>(sp =>
             {
-                var parser = sp.GetRequiredService<IJwtParser>();
+                IJwtParser parser = sp.GetRequiredService<IJwtParser>();
                 return new JwtRevoker(parser);
             });
             return services;
@@ -119,7 +119,7 @@ namespace SimpleJwt.DependencyInjection
             this IServiceCollection services,
             Action<SystemTextJsonProvider> configureProvider = null)
         {
-            var provider = new SystemTextJsonProvider();
+            SystemTextJsonProvider provider = new();
             configureProvider?.Invoke(provider);
             JsonProviderConfiguration.SetProvider(provider);
             return services;
@@ -157,14 +157,14 @@ namespace SimpleJwt.DependencyInjection
             // this will work; otherwise, it will throw an exception with a helpful message.
             try
             {
-                var newtonsoftProviderType = Type.GetType("SimpleJwt.Newtonsoft.Serialization.NewtonsoftJsonProvider, SimpleJwt.Newtonsoft");
+                Type newtonsoftProviderType = Type.GetType("SimpleJwt.Newtonsoft.Serialization.NewtonsoftJsonProvider, SimpleJwt.Newtonsoft");
                 if (newtonsoftProviderType == null)
                 {
                     throw new InvalidOperationException(
                         "The NewtonsoftJsonProvider type was not found. Make sure you have added a reference to the SimpleJwt.Newtonsoft package.");
                 }
                 
-                var provider = Activator.CreateInstance(newtonsoftProviderType) as IJsonProvider;
+                IJsonProvider provider = Activator.CreateInstance(newtonsoftProviderType) as IJsonProvider;
                 if (provider == null)
                 {
                     throw new InvalidOperationException(
