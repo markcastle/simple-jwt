@@ -1,10 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.Text.Json;
-using Xunit;
 using SimpleJwt.Abstractions;
 using SimpleJwt.Core;
+using System.Security.Cryptography;
+using System.Text.Json;
+// ReSharper disable NotAccessedField.Local
 
 namespace SimpleJwt.Tests
 {
@@ -13,38 +11,64 @@ namespace SimpleJwt.Tests
     /// </summary>
     public class JwtTokenCreationTests : TestBase
     {
+        /// <summary>
+        /// JWT builder used for creating tokens in tests.
+        /// </summary>
         private readonly IJwtBuilder _jwtBuilder;
+
+        /// <summary>
+        /// JWT parser used for validating created tokens.
+        /// </summary>
         private readonly IJwtParser _jwtParser;
+
+        /// <summary>
+        /// HMAC key used for signing tokens with symmetric algorithms.
+        /// </summary>
         private readonly byte[] _hmacKey;
+
+        /// <summary>
+        /// RSA key used for signing tokens with RSA-based algorithms.
+        /// </summary>
         private readonly RSA _rsaKey;
+
+        /// <summary>
+        /// ECDSA key used for signing tokens with elliptic curve algorithms.
+        /// </summary>
         private readonly ECDsa _ecdsaKey;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="JwtTokenCreationTests"/> class.
+        /// Sets up the JWT builder, parser, and cryptographic keys for testing.
+        /// </summary>
         public JwtTokenCreationTests() : base(useSystemTextJson: true)
         {
             // Initialize the JWT builder and parser
             _jwtBuilder = new JwtBuilder();
             _jwtParser = new JwtParser();
-            
+
             // Create test keys
             _hmacKey = new byte[32];
-            using (var rng = RandomNumberGenerator.Create())
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
             {
                 rng.GetBytes(_hmacKey);
             }
-            
+
             _rsaKey = RSA.Create(2048);
             _ecdsaKey = ECDsa.Create();
         }
 
+        /// <summary>
+        /// Tests that a token can be created with all standard JWT claims and verified.
+        /// </summary>
         [Fact]
         public void ShouldCreateTokenWithStandardClaims()
         {
             // Arrange
-            var now = DateTime.UtcNow;
-            var expiration = now.AddHours(1);
-            
+            DateTime now = DateTime.UtcNow;
+            DateTime expiration = now.AddHours(1);
+
             // Act
-            var token = _jwtBuilder
+            string token = _jwtBuilder
                 .SetIssuer("https://test-issuer.com")
                 .SetAudience("https://test-audience.com")
                 .SetSubject("user123")
@@ -53,9 +77,9 @@ namespace SimpleJwt.Tests
                 .SetNotBefore(now)
                 .SetJwtId("jti-123456")
                 .SignHs256(_hmacKey);
-            
+
             // Assert
-            var parsedToken = _jwtParser.Parse(token);
+            IJwtToken parsedToken = _jwtParser.Parse(token);
             Assert.Equal("https://test-issuer.com", parsedToken.GetClaim<string>(JwtConstants.ClaimIssuer));
             Assert.Equal("https://test-audience.com", parsedToken.GetClaim<string>(JwtConstants.ClaimAudience));
             Assert.Equal("user123", parsedToken.GetClaim<string>(JwtConstants.ClaimSubject));
@@ -63,20 +87,24 @@ namespace SimpleJwt.Tests
             Assert.Equal(JwtConstants.AlgorithmHs256, parsedToken.Header[JwtConstants.HeaderAlgorithm].ToString());
 
             // For numeric claims, we'll parse them as strings and convert manually
-            var iat = long.Parse(parsedToken.GetClaim<string>(JwtConstants.ClaimIssuedAt));
-            var exp = long.Parse(parsedToken.GetClaim<string>(JwtConstants.ClaimExpirationTime));
-            var nbf = long.Parse(parsedToken.GetClaim<string>(JwtConstants.ClaimNotBefore));
+            long iat = long.Parse(parsedToken.GetClaim<string>(JwtConstants.ClaimIssuedAt));
+            long exp = long.Parse(parsedToken.GetClaim<string>(JwtConstants.ClaimExpirationTime));
+            long nbf = long.Parse(parsedToken.GetClaim<string>(JwtConstants.ClaimNotBefore));
 
             // Allow for a small time difference (up to 5 seconds) due to processing time
-            var expectedIat = ((DateTimeOffset)now.ToUniversalTime()).ToUnixTimeSeconds();
-            var expectedExp = ((DateTimeOffset)expiration.ToUniversalTime()).ToUnixTimeSeconds();
-            var expectedNbf = ((DateTimeOffset)now.ToUniversalTime()).ToUnixTimeSeconds();
+            long expectedIat = ((DateTimeOffset)now.ToUniversalTime()).ToUnixTimeSeconds();
+            long expectedExp = ((DateTimeOffset)expiration.ToUniversalTime()).ToUnixTimeSeconds();
+            long expectedNbf = ((DateTimeOffset)now.ToUniversalTime()).ToUnixTimeSeconds();
 
             Assert.True(Math.Abs(expectedIat - iat) <= 5, $"IssuedAt time difference is too large. Expected around {expectedIat}, got {iat}");
             Assert.True(Math.Abs(expectedExp - exp) <= 5, $"ExpirationTime difference is too large. Expected around {expectedExp}, got {exp}");
             Assert.True(Math.Abs(expectedNbf - nbf) <= 5, $"NotBefore time difference is too large. Expected around {expectedNbf}, got {nbf}");
         }
 
+        /// <summary>
+        /// Tests that tokens can be created with different HMAC signing algorithms.
+        /// </summary>
+        /// <param name="algorithm">The HMAC algorithm to test (HS256, HS384, or HS512).</param>
         [Theory]
         [InlineData(JwtConstants.AlgorithmHs256)]
         [InlineData(JwtConstants.AlgorithmHs384)]
@@ -85,7 +113,7 @@ namespace SimpleJwt.Tests
         {
             // Arrange
             string token;
-            
+
             // Act
             switch (algorithm)
             {
@@ -101,48 +129,54 @@ namespace SimpleJwt.Tests
                 default:
                     throw new ArgumentException($"Unsupported algorithm: {algorithm}");
             }
-            
+
             // Assert
-            var parsedToken = _jwtParser.Parse(token);
+            IJwtToken parsedToken = _jwtParser.Parse(token);
             Assert.Equal(algorithm, parsedToken.Header[JwtConstants.HeaderAlgorithm].ToString());
             Assert.Equal("value", parsedToken.GetClaim<string>("test"));
         }
 
+        /// <summary>
+        /// Tests that tokens can be created with custom claims of various types.
+        /// </summary>
         [Fact]
         public void ShouldCreateTokenWithCustomClaims()
         {
             // Arrange
-            var customClaims = new Dictionary<string, object>
+            Dictionary<string, object> customClaims = new Dictionary<string, object>
             {
                 { "role", "admin" },
                 { "permissions", new[] { "read", "write" } },
                 { "metadata", new { version = 1, active = true } }
             };
-            
+
             // Act
-            var builder = _jwtBuilder;
-            foreach (var claim in customClaims)
+            IJwtBuilder builder = _jwtBuilder;
+            foreach (KeyValuePair<string, object> claim in customClaims)
             {
                 builder = builder.AddClaim(claim.Key, claim.Value);
             }
-            var token = builder.SignHs256(_hmacKey);
-            
+            string token = builder.SignHs256(_hmacKey);
+
             // Assert
-            var parsedToken = _jwtParser.Parse(token);
+            IJwtToken parsedToken = _jwtParser.Parse(token);
             Assert.Equal("admin", parsedToken.GetClaim<string>("role"));
 
             // For array claims, we need to deserialize the JSON element
-            var permissionsJson = parsedToken.Payload["permissions"].ToString();
-            var permissions = JsonSerializer.Deserialize<string[]>(permissionsJson);
+            string? permissionsJson = parsedToken.Payload["permissions"].ToString();
+            string[]? permissions = JsonSerializer.Deserialize<string[]>(permissionsJson);
             Assert.Equal(new[] { "read", "write" }, permissions);
 
             // For object claims, we need to deserialize the JSON element
-            var metadataJson = parsedToken.Payload["metadata"].ToString();
-            var metadata = JsonSerializer.Deserialize<JsonElement>(metadataJson);
+            string? metadataJson = parsedToken.Payload["metadata"].ToString();
+            JsonElement metadata = JsonSerializer.Deserialize<JsonElement>(metadataJson);
             Assert.Equal(1, metadata.GetProperty("version").GetInt32());
             Assert.True(metadata.GetProperty("active").GetBoolean());
         }
 
+        /// <summary>
+        /// Tests that tokens can store deeply nested object structures as claims.
+        /// </summary>
         [Fact]
         public void ShouldCreateTokenWithNestedObjects()
         {
@@ -164,16 +198,16 @@ namespace SimpleJwt.Tests
                     }
                 }
             };
-            
+
             // Act
-            var token = _jwtBuilder
+            string token = _jwtBuilder
                 .AddClaim("data", nestedObject)
                 .SignHs256(_hmacKey);
-            
+
             // Assert
-            var parsedToken = _jwtParser.Parse(token);
-            var dataJson = parsedToken.Payload["data"].ToString();
-            var data = JsonSerializer.Deserialize<JsonElement>(dataJson);
+            IJwtToken parsedToken = _jwtParser.Parse(token);
+            string? dataJson = parsedToken.Payload["data"].ToString();
+            JsonElement data = JsonSerializer.Deserialize<JsonElement>(dataJson);
 
             Assert.Equal(123, data.GetProperty("user").GetProperty("id").GetInt32());
             Assert.Equal("John", data.GetProperty("user").GetProperty("profile").GetProperty("firstName").GetString());
@@ -182,50 +216,56 @@ namespace SimpleJwt.Tests
             Assert.True(data.GetProperty("user").GetProperty("profile").GetProperty("preferences").GetProperty("notifications").GetBoolean());
         }
 
+        /// <summary>
+        /// Tests that empty values (strings, arrays, objects) can be properly stored in token claims.
+        /// </summary>
         [Fact]
         public void ShouldHandleEmptyClaims()
         {
             // Act
-            var token = _jwtBuilder
+            string token = _jwtBuilder
                 .AddClaim("emptyString", "")
                 .AddClaim("emptyArray", Array.Empty<string>())
                 .AddClaim("emptyObject", new { })
                 .SignHs256(_hmacKey);
-            
+
             // Assert
-            var parsedToken = _jwtParser.Parse(token);
+            IJwtToken parsedToken = _jwtParser.Parse(token);
             Assert.Equal("", parsedToken.GetClaim<string>("emptyString"));
 
             // For array claims, we need to deserialize the JSON element
-            var emptyArrayJson = parsedToken.Payload["emptyArray"].ToString();
-            var emptyArray = JsonSerializer.Deserialize<string[]>(emptyArrayJson);
+            string? emptyArrayJson = parsedToken.Payload["emptyArray"].ToString();
+            string[]? emptyArray = JsonSerializer.Deserialize<string[]>(emptyArrayJson);
             Assert.Empty(emptyArray);
 
             // For object claims, we need to deserialize the JSON element
-            var emptyObjectJson = parsedToken.Payload["emptyObject"].ToString();
-            var emptyObject = JsonSerializer.Deserialize<JsonElement>(emptyObjectJson);
+            string? emptyObjectJson = parsedToken.Payload["emptyObject"].ToString();
+            JsonElement emptyObject = JsonSerializer.Deserialize<JsonElement>(emptyObjectJson);
             Assert.Equal(JsonValueKind.Object, emptyObject.ValueKind);
         }
 
+        /// <summary>
+        /// Tests that tokens can handle large data structures with numerous elements.
+        /// </summary>
         [Fact]
         public void ShouldHandleLargeClaims()
         {
             // Arrange
-            var largeArray = new int[1000];
+            int[] largeArray = new int[1000];
             for (int i = 0; i < largeArray.Length; i++)
             {
                 largeArray[i] = i;
             }
-            
+
             // Act
-            var token = _jwtBuilder
+            string token = _jwtBuilder
                 .AddClaim("largeArray", largeArray)
                 .SignHs256(_hmacKey);
-            
+
             // Assert
-            var parsedToken = _jwtParser.Parse(token);
-            var largeArrayJson = parsedToken.Payload["largeArray"].ToString();
-            var parsedArray = JsonSerializer.Deserialize<int[]>(largeArrayJson);
+            IJwtToken parsedToken = _jwtParser.Parse(token);
+            string? largeArrayJson = parsedToken.Payload["largeArray"].ToString();
+            int[]? parsedArray = JsonSerializer.Deserialize<int[]>(largeArrayJson);
             Assert.Equal(1000, parsedArray.Length);
             for (int i = 0; i < parsedArray.Length; i++)
             {
@@ -233,36 +273,42 @@ namespace SimpleJwt.Tests
             }
         }
 
+        /// <summary>
+        /// Tests that tokens can properly handle claims with special characters.
+        /// </summary>
         [Fact]
         public void ShouldHandleSpecialCharacters()
         {
             // Arrange
-            var specialChars = "!@#$%^&*()_+-=[]{}|;:'\",.<>?/\\";
-            
+            string specialChars = "!@#$%^&*()_+-=[]{}|;:'\",.<>?/\\";
+
             // Act
-            var token = _jwtBuilder
+            string token = _jwtBuilder
                 .AddClaim("special", specialChars)
                 .SignHs256(_hmacKey);
-            
+
             // Assert
-            var parsedToken = _jwtParser.Parse(token);
+            IJwtToken parsedToken = _jwtParser.Parse(token);
             Assert.Equal(specialChars, parsedToken.GetClaim<string>("special"));
         }
 
+        /// <summary>
+        /// Tests that tokens can properly handle Unicode characters in claims.
+        /// </summary>
         [Fact]
         public void ShouldHandleUnicodeCharacters()
         {
             // Arrange
-            var unicodeText = "Hello 世界 🌍";
-            
+            string unicodeText = "Hello 世界 🌍";
+
             // Act
-            var token = _jwtBuilder
+            string token = _jwtBuilder
                 .AddClaim("unicode", unicodeText)
                 .SignHs256(_hmacKey);
-            
+
             // Assert
-            var parsedToken = _jwtParser.Parse(token);
+            IJwtToken parsedToken = _jwtParser.Parse(token);
             Assert.Equal(unicodeText, parsedToken.GetClaim<string>("unicode"));
         }
     }
-} 
+}
