@@ -19,14 +19,14 @@
   - [x] UTC date handling and timestamp validation
   - [x] Complex JSON claim handling
 
-- [ ] Token Parsing Tests
+- [x] Token Parsing Tests
   - [x] Parse valid tokens of all supported formats
   - [x] Parse with different JSON serialization providers
   - [x] Error cases (malformed tokens, invalid encoding)
 
 - [ ] Token Validation Tests
-  - [ ] Signature validation for each algorithm
-  - [ ] Expiration validation
+  - [x] Signature validation for each algorithm
+  - [x] Expiration validation
   - [ ] Issuer and audience validation
   - [ ] JTI validation
   - [ ] Clock skew scenarios
@@ -130,8 +130,8 @@
 
 ## Progress Tracking
 - Total Tasks: 60
-- Completed Tasks: 18
-- Critical Priority: 13/20
+- Completed Tasks: 20
+- Critical Priority: 15/20
 - High Priority: 5/15
 - Medium Priority: 0/15
 - Low Priority: 0/10
