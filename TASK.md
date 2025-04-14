@@ -15,7 +15,9 @@
   - [x] Token creation with custom claims
   - [x] Token creation with nested objects
   - [x] Edge cases (empty claims, size limits)
-  - [ ] RSA and ECDSA algorithm support
+  - [x] RSA and ECDSA algorithm support
+  - [x] UTC date handling and timestamp validation
+  - [x] Complex JSON claim handling
 
 - [ ] Token Parsing Tests
   - [ ] Parse valid tokens of all supported formats
@@ -61,9 +63,11 @@
 ### Integration Tests
 - [x] JSON Provider Integration
   - [x] System.Text.Json integration
-  - [ ] Newtonsoft.Json integration
-  - [ ] Provider switching
+  - [x] Newtonsoft.Json integration
+  - [x] Provider switching
   - [x] Serialization edge cases
+  - [x] Complex object serialization
+  - [x] Array and nested object handling
 
 ### Token Revocation
 - [ ] Revocation System Tests
@@ -126,9 +130,9 @@
 
 ## Progress Tracking
 - Total Tasks: 60
-- Completed Tasks: 8
-- Critical Priority: 6/20
-- High Priority: 2/15
+- Completed Tasks: 15
+- Critical Priority: 10/20
+- High Priority: 5/15
 - Medium Priority: 0/15
 - Low Priority: 0/10
 
