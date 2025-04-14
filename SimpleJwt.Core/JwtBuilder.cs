@@ -482,5 +482,23 @@ namespace SimpleJwt.Core
 
             return $"{data}.{signatureBase64}";
         }
+
+        /// <summary>
+        /// Sets a header parameter in the JWT.
+        /// </summary>
+        /// <param name="name">The name of the header parameter.</param>
+        /// <param name="value">The value of the header parameter.</param>
+        /// <returns>The current <see cref="IJwtBuilder"/> instance.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="name"/> is null or empty.</exception>
+        public IJwtBuilder SetHeaderParameter(string name, object value)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            _header[name] = value;
+            return this;
+        }
     }
 } 

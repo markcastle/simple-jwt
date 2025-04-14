@@ -190,5 +190,13 @@ namespace SimpleJwt.Abstractions
         /// <param name="ecdsa">The ECDSA key to use for signing.</param>
         /// <returns>The signed JWT token string.</returns>
         string SignEs512(ECDsa ecdsa);
+
+        /// <summary>
+        /// Sets a header parameter in the JWT.
+        /// </summary>
+        /// <param name="name">The name of the header parameter.</param>
+        /// <param name="value">The value of the header parameter.</param>
+        /// <returns>The current <see cref="IJwtBuilder"/> instance.</returns>
+        IJwtBuilder SetHeaderParameter(string name, object value);
     }
 } 
