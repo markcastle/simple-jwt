@@ -188,6 +188,16 @@ void Awake()
 }
 ```
 
+The `SimpleJwtUnityExtensions.InitializeForUnity()` method performs several critical setup tasks:
+
+1. **Configures JSON Provider**: Automatically configures the Newtonsoft.Json provider as the default serializer since System.Text.Json is not fully supported in Unity.
+2. **Sets Up IL2CPP Compatibility**: Registers essential types for AOT compilation when using IL2CPP scripting backend.
+3. **Optimizes for Unity**: Adjusts serialization settings to be compatible with Unity's environment.
+4. **Registers Date Handling**: Ensures proper serialization and deserialization of DateTime objects in JWT claims.
+5. **Initializes Security Providers**: Sets up the appropriate cryptographic providers that work in Unity's runtime environment.
+
+This initialization only needs to be called once at application startup, typically in an early-loaded MonoBehaviour.
+
 #### ⚠️ Important Note for Unity Projects
 
 When using SimpleJwt in Unity:
