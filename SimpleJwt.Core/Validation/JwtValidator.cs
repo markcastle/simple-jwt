@@ -48,19 +48,27 @@ namespace SimpleJwt.Core.Validation
                 throw new ArgumentException("Token cannot be null or empty.", nameof(token));
             }
 
-            IJwtToken parsedToken = _parser.Parse(token);
-            var parameters = new ValidationParameters
+            try
             {
-                ValidateLifetime = _validateExpiration,
-                ValidateIssuer = !string.IsNullOrEmpty(_issuer),
-                ValidIssuer = _issuer,
-                ValidateAudience = !string.IsNullOrEmpty(_audience),
-                ValidAudience = _audience,
-                ValidateSignature = true,
-                ClockSkew = _clockSkew
-            };
+                IJwtToken parsedToken = _parser.Parse(token);
+                var parameters = new ValidationParameters
+                {
+                    ValidateLifetime = _validateExpiration,
+                    ValidateIssuer = !string.IsNullOrEmpty(_issuer),
+                    ValidIssuer = _issuer,
+                    ValidateAudience = !string.IsNullOrEmpty(_audience),
+                    ValidAudience = _audience,
+                    ValidateSignature = true,
+                    ClockSkew = _clockSkew
+                };
 
-            return Validate(parsedToken, parameters);
+                return Validate(parsedToken, parameters);
+            }
+            catch (FormatException ex)
+            {
+                // Capture format exceptions from token parsing and return as validation error
+                return ValidationResult.Failure(ValidationCodes.InvalidToken, $"Failed to parse token: {ex.Message}");
+            }
         }
 
         /// <inheritdoc />
@@ -86,12 +94,14 @@ namespace SimpleJwt.Core.Validation
             // Validate lifetime
             if (parameters.ValidateLifetime)
             {
+                // Validate expiration time
                 var expirationResult = ValidateExpirationTime(token);
                 if (!expirationResult.IsValid)
                 {
                     return expirationResult;
                 }
 
+                // Validate not-before time
                 var notBeforeResult = ValidateNotBeforeTime(token);
                 if (!notBeforeResult.IsValid)
                 {
@@ -211,13 +221,27 @@ namespace SimpleJwt.Core.Validation
                 throw new ArgumentException("Token cannot be null or empty.", nameof(token));
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
+
             try
             {
-                IJwtToken parsedToken = _parser.Parse(token);
-                return await ValidateAsync(parsedToken, new ValidationParameters(), cancellationToken).ConfigureAwait(false);
+                IJwtToken parsedToken = await _parser.ParseAsync(token, cancellationToken).ConfigureAwait(false);
+                var parameters = new ValidationParameters
+                {
+                    ValidateLifetime = _validateExpiration,
+                    ValidateIssuer = !string.IsNullOrEmpty(_issuer),
+                    ValidIssuer = _issuer,
+                    ValidateAudience = !string.IsNullOrEmpty(_audience),
+                    ValidAudience = _audience,
+                    ValidateSignature = true,
+                    ClockSkew = _clockSkew
+                };
+
+                return await ValidateAsync(parsedToken, parameters, cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception ex)
+            catch (FormatException ex)
             {
+                // Capture format exceptions from token parsing and return as validation error
                 return ValidationResult.Failure(ValidationCodes.InvalidToken, $"Failed to parse token: {ex.Message}");
             }
         }
@@ -230,26 +254,25 @@ namespace SimpleJwt.Core.Validation
                 throw new ArgumentNullException(nameof(token));
             }
 
-            if (parameters == null)
-            {
-                throw new ArgumentNullException(nameof(parameters));
-            }
+            // Check cancellation before proceeding
+            cancellationToken.ThrowIfCancellationRequested();
 
-            // First perform synchronous validations
+            // First validate the token normally
             ValidationResult result = Validate(token, parameters);
-            if (!result.IsValid)
-            {
-                return result;
-            }
 
-            // Run async validators
-            foreach (var validator in _asyncValidators)
+            // Run async validators only if the token has passed basic validation
+            if (result.IsValid && _asyncValidators.Count > 0)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                var validationResult = await validator(token).ConfigureAwait(false);
-                if (!validationResult.IsValid)
+                foreach (var asyncValidator in _asyncValidators)
                 {
-                    return validationResult;
+                    // Check for cancellation before each validator
+                    cancellationToken.ThrowIfCancellationRequested();
+                    
+                    var validationResult = await asyncValidator(token).ConfigureAwait(false);
+                    if (!validationResult.IsValid)
+                    {
+                        return validationResult;
+                    }
                 }
             }
 
@@ -283,18 +306,19 @@ namespace SimpleJwt.Core.Validation
         {
             if (string.IsNullOrEmpty(token))
             {
-                return (false, ValidationResult.Failure(ValidationCodes.InvalidToken, "Token cannot be null or empty."));
+                return (true, ValidationResult.Failure(ValidationCodes.InvalidToken, "Token cannot be null or empty."));
             }
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             try
             {
-                IJwtToken parsedToken = _parser.Parse(token);
-                ValidationResult result = await ValidateAsync(parsedToken, new ValidationParameters(), cancellationToken).ConfigureAwait(false);
+                var result = await ValidateAsync(token, cancellationToken).ConfigureAwait(false);
                 return (true, result);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                return (false, ValidationResult.Failure(ValidationCodes.InvalidToken, $"Failed to parse token: {ex.Message}"));
+                return (false, ValidationResult.Failure(ValidationCodes.InvalidToken, $"Unexpected error during validation: {ex.Message}"));
             }
         }
 
@@ -417,7 +441,10 @@ namespace SimpleJwt.Core.Validation
             }
 
             DateTimeOffset notBeforeDateTime = DateTimeOffset.FromUnixTimeSeconds(notBeforeTime);
-            if (DateTimeOffset.UtcNow < notBeforeDateTime.Subtract(_clockSkew))
+            DateTimeOffset currentTime = DateTimeOffset.UtcNow;
+            
+            // If current time is less than notBefore time (minus clock skew), token is not yet valid
+            if (currentTime < notBeforeDateTime.Subtract(_clockSkew))
             {
                 return ValidationResult.Failure(ValidationCodes.TokenNotYetValid, "Token is not yet valid.");
             }
@@ -569,7 +596,9 @@ namespace SimpleJwt.Core.Validation
 
             // Use the original header and payload parts for verification
             string data = $"{parts[0]}.{parts[1]}";
-            string signature = parts[2]; // Use the signature from the token parts
+            
+            // Use token.Signature instead of parts[2]
+            string signature = token.Signature;
 
             byte[] signatureBytes = JwtBase64UrlEncoder.DecodeToBytes(signature);
             byte[] dataBytes = Encoding.UTF8.GetBytes(data);
