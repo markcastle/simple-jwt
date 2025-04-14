@@ -22,6 +22,7 @@
     <ProjectReference Include="..\SimpleJwt.Core\SimpleJwt.Core.csproj" />
     <ProjectReference Include="..\SimpleJwt.Abstractions\SimpleJwt.Abstractions.csproj" />
     <ProjectReference Include="..\SimpleJwt.SystemTextJson\SimpleJwt.SystemTextJson.csproj" />
+    <ProjectReference Include="..\SimpleJwt.Newtonsoft\SimpleJwt.Newtonsoft.csproj" />
   </ItemGroup>
 
 </Project>
