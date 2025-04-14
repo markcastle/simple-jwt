@@ -30,6 +30,15 @@ A lightweight, secure, and extensible JWT (JSON Web Token) library for .NET appl
   - Compatible with Unity's IL2CPP scripting backend
   - Minimal dependencies for easier integration with Unity projects
   - Coroutine-based API for async operations in Unity
+- **Zero Dependencies**: Built with no external dependencies, using only .NET Standard 2.1 libraries
+- **Full .NET Standard 2.1 Compliance**: Compatible with any .NET platform that supports .NET Standard 2.1
+- **Multiple Signing Algorithms**: Support for HMAC-SHA256/384/512, RSA-SHA256/384/512, and ECDSA-SHA256/384/512
+- **Comprehensive Claim Management**: Built-in support for standard JWT claims and custom claim handling
+- **Flexible Token Building**: Fluent builder pattern for easy token creation
+- **Robust Token Parsing**: Safe and efficient token parsing with validation
+- **Extensible Architecture**: Easy to extend with custom claim types and validation rules
+- **Strong Type Safety**: Full type safety for all operations
+- **Comprehensive Testing**: Extensive test coverage for all features
 
 ## 📦 Installation
 
@@ -686,4 +695,16 @@ This library has been updated to use the latest .NET package references as of 20
 
 ## 🔒 Security Notice
 
-SimpleJwt includes security upgrades that address known vulnerabilities in dependencies. When upgrading, we recommend always checking for the latest version which will include security patches. 
+SimpleJwt includes security upgrades that address known vulnerabilities in dependencies. When upgrading, we recommend always checking for the latest version which will include security patches.
+
+## Technical Details
+
+- **Framework Compatibility**: 
+  - .NET Standard 2.1 compliant
+  - Compatible with .NET Core 3.0+, .NET 5+, and any other .NET implementation supporting .NET Standard 2.1
+  - No platform-specific dependencies
+
+- **Dependencies**:
+  - Zero external NuGet packages required
+  - Uses only built-in .NET Standard 2.1 libraries
+  - No runtime dependencies beyond .NET Standard 2.1 
