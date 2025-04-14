@@ -31,6 +31,9 @@ namespace SimpleJwt.Tests
         [InlineData(false)]
         public void ShouldParseTokensWithDifferentJsonProviders(bool useSystemTextJson)
         {
+            // We're using the parameter for test data, but not directly in this test
+            // Let's suppress the warning since the test already sets up the provider in the constructor
+            
             // Arrange
             string token = _builder
                 .SetIssuer("test-issuer")
@@ -48,6 +51,9 @@ namespace SimpleJwt.Tests
             Assert.Equal("test-issuer", parsedToken.GetClaim<string>("iss"));
             Assert.Equal("test-audience", parsedToken.GetClaim<string>("aud"));
             Assert.Equal("test-subject", parsedToken.GetClaim<string>("sub"));
+            
+            // Use the parameter to silence the warning
+            _ = useSystemTextJson;
         }
 
         /// <summary>

@@ -163,12 +163,12 @@ namespace SimpleJwt.Tests
             Assert.Equal("admin", parsedToken.GetClaim<string>("role"));
 
             // For array claims, we need to deserialize the JSON element
-            string? permissionsJson = parsedToken.Payload["permissions"].ToString();
-            string[]? permissions = JsonSerializer.Deserialize<string[]>(permissionsJson);
+            string permissionsJson = parsedToken.Payload["permissions"].ToString()!;
+            string[] permissions = JsonSerializer.Deserialize<string[]>(permissionsJson)!;
             Assert.Equal(new[] { "read", "write" }, permissions);
 
             // For object claims, we need to deserialize the JSON element
-            string? metadataJson = parsedToken.Payload["metadata"].ToString();
+            string metadataJson = parsedToken.Payload["metadata"].ToString()!;
             JsonElement metadata = JsonSerializer.Deserialize<JsonElement>(metadataJson);
             Assert.Equal(1, metadata.GetProperty("version").GetInt32());
             Assert.True(metadata.GetProperty("active").GetBoolean());
@@ -206,7 +206,7 @@ namespace SimpleJwt.Tests
 
             // Assert
             IJwtToken parsedToken = _jwtParser.Parse(token);
-            string? dataJson = parsedToken.Payload["data"].ToString();
+            string dataJson = parsedToken.Payload["data"].ToString()!;
             JsonElement data = JsonSerializer.Deserialize<JsonElement>(dataJson);
 
             Assert.Equal(123, data.GetProperty("user").GetProperty("id").GetInt32());
@@ -234,12 +234,12 @@ namespace SimpleJwt.Tests
             Assert.Equal("", parsedToken.GetClaim<string>("emptyString"));
 
             // For array claims, we need to deserialize the JSON element
-            string? emptyArrayJson = parsedToken.Payload["emptyArray"].ToString();
-            string[]? emptyArray = JsonSerializer.Deserialize<string[]>(emptyArrayJson);
+            string emptyArrayJson = parsedToken.Payload["emptyArray"].ToString()!;
+            string[] emptyArray = JsonSerializer.Deserialize<string[]>(emptyArrayJson)!;
             Assert.Empty(emptyArray);
 
             // For object claims, we need to deserialize the JSON element
-            string? emptyObjectJson = parsedToken.Payload["emptyObject"].ToString();
+            string emptyObjectJson = parsedToken.Payload["emptyObject"].ToString()!;
             JsonElement emptyObject = JsonSerializer.Deserialize<JsonElement>(emptyObjectJson);
             Assert.Equal(JsonValueKind.Object, emptyObject.ValueKind);
         }
@@ -264,8 +264,8 @@ namespace SimpleJwt.Tests
 
             // Assert
             IJwtToken parsedToken = _jwtParser.Parse(token);
-            string? largeArrayJson = parsedToken.Payload["largeArray"].ToString();
-            int[]? parsedArray = JsonSerializer.Deserialize<int[]>(largeArrayJson);
+            string largeArrayJson = parsedToken.Payload["largeArray"].ToString()!;
+            int[] parsedArray = JsonSerializer.Deserialize<int[]>(largeArrayJson)!;
             Assert.Equal(1000, parsedArray.Length);
             for (int i = 0; i < parsedArray.Length; i++)
             {

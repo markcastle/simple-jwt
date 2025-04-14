@@ -280,11 +280,11 @@ namespace SimpleJwt.Tests
         public void ShouldThrowExceptionForNullOrEmptyToken()
         {
             // Assert
-            Assert.Throws<ArgumentException>(() => _revoker.Revoke(null, "Null token test"));
+            Assert.Throws<ArgumentException>(() => _revoker.Revoke(null!, "Null token test"));
             Assert.Throws<ArgumentException>(() => _revoker.Revoke("", "Empty token test"));
-            Assert.Throws<ArgumentException>(() => _revoker.IsRevoked(null));
+            Assert.Throws<ArgumentException>(() => _revoker.IsRevoked(null!));
             Assert.Throws<ArgumentException>(() => _revoker.IsRevoked(""));
-            Assert.Throws<ArgumentException>(() => _revoker.GetRevocationReason(null));
+            Assert.Throws<ArgumentException>(() => _revoker.GetRevocationReason(null!));
             Assert.Throws<ArgumentException>(() => _revoker.GetRevocationReason(""));
         }
 
