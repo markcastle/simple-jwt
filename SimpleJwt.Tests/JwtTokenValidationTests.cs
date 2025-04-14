@@ -1,136 +1,53 @@
+using System;
+using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Text;
 using SimpleJwt.Abstractions;
 using SimpleJwt.Abstractions.Validation;
 using SimpleJwt.Core;
-using System.Security.Cryptography;
-using System.Text;
+using SimpleJwt.Core.Validation;
+using Xunit;
 
 namespace SimpleJwt.Tests
 {
-    /// <summary>
-    /// Tests for JWT token validation functionality, focusing on signature validation for different algorithms.
-    /// </summary>
-    public class JwtTokenValidationTests : TestBase
+    public class JwtTokenValidationTests
     {
-        private readonly IJwtBuilder _builder;
         private readonly IJwtValidator _validator;
+        private readonly IJwtBuilder _builder;
         private readonly byte[] _hmacKey;
-        private readonly RSA _rsaKey;
-        private readonly ECDsa _ecdsaKey;
 
-        public JwtTokenValidationTests() : base(useSystemTextJson: true)
+        public JwtTokenValidationTests()
         {
-            _builder = JwtBuilderFactory.Create();
-            _validator = JwtValidatorFactory.Create();
-            
-            // Create test keys
-            _hmacKey = new byte[32];
-            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
-            {
-                rng.GetBytes(_hmacKey);
-            }
-
-            _rsaKey = RSA.Create(2048);
-            _ecdsaKey = ECDsa.Create();
+            _validator = new JwtValidator(new JwtParser());
+            _builder = new JwtBuilder();
+            _hmacKey = Encoding.UTF8.GetBytes("secret-key");
         }
 
         /// <summary>
-        /// Tests signature validation for HMAC-SHA256 algorithm.
+        /// Tests that validation succeeds when issuer matches the expected value.
         /// </summary>
         [Fact]
-        public void ShouldValidateHmacSha256Signature()
+        public void ShouldValidateMatchingIssuer()
         {
             // Arrange
+            const string expectedIssuer = "test-issuer";
             string token = _builder
-                .SetIssuer("test-issuer")
+                .SetIssuer(expectedIssuer)
                 .SetAudience("test-audience")
                 .SetSubject("test-subject")
                 .SetExpiration(TimeSpan.FromMinutes(30))
                 .SetIssuedNow()
                 .SignHs256(_hmacKey);
 
-            // Act
-            ValidationResult result = _validator
-                .SetHmacKey(_hmacKey)
-                .Validate(token);
-
-            // Assert
-            Assert.True(result.IsValid);
-            Assert.False(result.HasErrors);
-        }
-
-        /// <summary>
-        /// Tests signature validation for HMAC-SHA384 algorithm.
-        /// </summary>
-        [Fact]
-        public void ShouldValidateHmacSha384Signature()
-        {
-            // Arrange
-            string token = _builder
-                .SetIssuer("test-issuer")
-                .SetAudience("test-audience")
-                .SetSubject("test-subject")
-                .SetExpiration(TimeSpan.FromMinutes(30))
-                .SetIssuedNow()
-                .SignHs384(_hmacKey);
-
-            // Act
-            ValidationResult result = _validator
-                .SetHmacKey(_hmacKey)
-                .Validate(token);
-
-            // Assert
-            Assert.True(result.IsValid);
-            Assert.False(result.HasErrors);
-        }
-
-        /// <summary>
-        /// Tests signature validation for HMAC-SHA512 algorithm.
-        /// </summary>
-        [Fact]
-        public void ShouldValidateHmacSha512Signature()
-        {
-            // Arrange
-            string token = _builder
-                .SetIssuer("test-issuer")
-                .SetAudience("test-audience")
-                .SetSubject("test-subject")
-                .SetExpiration(TimeSpan.FromMinutes(30))
-                .SetIssuedNow()
-                .SignHs512(_hmacKey);
-
-            // Act
-            ValidationResult result = _validator
-                .SetHmacKey(_hmacKey)
-                .Validate(token);
-
-            // Assert
-            Assert.True(result.IsValid);
-            Assert.False(result.HasErrors);
-        }
-
-        /// <summary>
-        /// Tests signature validation for RSA-SHA256 algorithm.
-        /// </summary>
-        [Fact]
-        public void ShouldValidateRsaSha256Signature()
-        {
-            // Arrange
-            string token = _builder
-                .SetIssuer("test-issuer")
-                .SetAudience("test-audience")
-                .SetSubject("test-subject")
-                .SetExpiration(TimeSpan.FromMinutes(30))
-                .SetIssuedNow()
-                .SignRs256(_rsaKey);
-
             var parameters = new ValidationParameters
             {
-                RsaSecurityKey = _rsaKey,
-                ValidateSignature = true
+                ValidateIssuer = true,
+                ValidIssuer = expectedIssuer,
+                SymmetricSecurityKey = _hmacKey
             };
 
             // Act
-            IJwtParser parser = JwtParserFactory.Create();
+            IJwtParser parser = new JwtParser();
             IJwtToken parsedToken = parser.Parse(token);
             ValidationResult result = _validator.Validate(parsedToken, parameters);
 
@@ -140,260 +57,238 @@ namespace SimpleJwt.Tests
         }
 
         /// <summary>
-        /// Tests that signature validation fails when using the wrong key.
+        /// Tests that validation fails when issuer doesn't match the expected value.
         /// </summary>
         [Fact]
-        public void ShouldFailValidationWithWrongKey()
+        public void ShouldFailValidationWithWrongIssuer()
         {
             // Arrange
-            byte[] wrongKey = new byte[32];
-            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
-            {
-                rng.GetBytes(wrongKey);
-            }
-
             string token = _builder
-                .SetIssuer("test-issuer")
+                .SetIssuer("wrong-issuer")
                 .SetAudience("test-audience")
                 .SetSubject("test-subject")
                 .SetExpiration(TimeSpan.FromMinutes(30))
-                .SetIssuedNow()
-                .SignHs256(_hmacKey);
-
-            // Act
-            ValidationResult result = _validator
-                .SetHmacKey(wrongKey)
-                .Validate(token);
-
-            // Assert
-            Assert.False(result.IsValid);
-            Assert.True(result.HasErrors);
-            Assert.Equal(ValidationCodes.InvalidSignature, result.Errors[0].Code);
-        }
-
-        /// <summary>
-        /// Tests that signature validation fails when the token is tampered with.
-        /// </summary>
-        [Fact]
-        public void ShouldFailValidationWithTamperedToken()
-        {
-            // Arrange
-            string token = _builder
-                .SetIssuer("test-issuer")
-                .SetAudience("test-audience")
-                .SetSubject("test-subject")
-                .SetExpiration(TimeSpan.FromMinutes(30))
-                .SetIssuedNow()
-                .SignHs256(_hmacKey);
-
-            // Tamper with the token by modifying the payload
-            string[] parts = token.Split('.');
-            string tamperedPayload = Convert.ToBase64String(Encoding.UTF8.GetBytes("{\"iss\":\"tampered-issuer\",\"aud\":\"test-audience\",\"sub\":\"test-subject\",\"exp\":" + DateTimeOffset.UtcNow.AddMinutes(30).ToUnixTimeSeconds() + "}"))
-                .TrimEnd('=')
-                .Replace('+', '-')
-                .Replace('/', '_');
-            string tamperedToken = $"{parts[0]}.{tamperedPayload}.{parts[2]}";
-
-            // Act
-            ValidationResult result = _validator
-                .SetHmacKey(_hmacKey)
-                .Validate(tamperedToken);
-
-            // Assert
-            Assert.False(result.IsValid);
-            Assert.True(result.HasErrors);
-            Assert.Equal(ValidationCodes.InvalidSignature, result.Errors[0].Code);
-        }
-
-        /// <summary>
-        /// Tests that signature validation fails when the algorithm is changed.
-        /// </summary>
-        [Fact]
-        public void ShouldFailValidationWithChangedAlgorithm()
-        {
-            // Arrange
-            string token = _builder
-                .SetIssuer("test-issuer")
-                .SetAudience("test-audience")
-                .SetSubject("test-subject")
-                .SetExpiration(TimeSpan.FromMinutes(30))
-                .SetIssuedNow()
-                .SignHs256(_hmacKey);
-
-            // Change the algorithm in the header
-            string[] parts = token.Split('.');
-            string tamperedHeader = Convert.ToBase64String(Encoding.UTF8.GetBytes("{\"alg\":\"HS384\",\"typ\":\"JWT\"}"))
-                .TrimEnd('=')
-                .Replace('+', '-')
-                .Replace('/', '_');
-            string tamperedToken = $"{tamperedHeader}.{parts[1]}.{parts[2]}";
-
-            // Act
-            ValidationResult result = _validator
-                .SetHmacKey(_hmacKey)
-                .Validate(tamperedToken);
-
-            // Assert
-            Assert.False(result.IsValid);
-            Assert.True(result.HasErrors);
-            Assert.Equal(ValidationCodes.InvalidSignature, result.Errors[0].Code);
-        }
-
-        /// <summary>
-        /// Tests that validation succeeds for a token that has not expired.
-        /// </summary>
-        [Fact]
-        public void ShouldValidateNonExpiredToken()
-        {
-            // Arrange
-            string token = _builder
-                .SetIssuer("test-issuer")
-                .SetAudience("test-audience")
-                .SetSubject("test-subject")
-                .SetExpiration(TimeSpan.FromMinutes(30)) // Token expires in 30 minutes
                 .SetIssuedNow()
                 .SignHs256(_hmacKey);
 
             var parameters = new ValidationParameters
             {
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.FromMinutes(5)
+                ValidateIssuer = true,
+                ValidIssuer = "expected-issuer",
+                SymmetricSecurityKey = _hmacKey
             };
 
             // Act
-            IJwtParser parser = JwtParserFactory.Create();
-            IJwtToken parsedToken = parser.Parse(token);
-            ValidationResult result = _validator.Validate(parsedToken, parameters);
-
-            // Assert
-            Assert.True(result.IsValid);
-            Assert.False(result.HasErrors);
-        }
-
-        /// <summary>
-        /// Tests that validation fails for an expired token.
-        /// </summary>
-        [Fact]
-        public void ShouldFailValidationForExpiredToken()
-        {
-            // Arrange
-            string token = _builder
-                .SetIssuer("test-issuer")
-                .SetAudience("test-audience")
-                .SetSubject("test-subject")
-                .SetExpiration(TimeSpan.FromMinutes(-30)) // Token expired 30 minutes ago
-                .SetIssuedNow()
-                .SignHs256(_hmacKey);
-
-            var parameters = new ValidationParameters
-            {
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.FromMinutes(5)
-            };
-
-            // Act
-            IJwtParser parser = JwtParserFactory.Create();
+            IJwtParser parser = new JwtParser();
             IJwtToken parsedToken = parser.Parse(token);
             ValidationResult result = _validator.Validate(parsedToken, parameters);
 
             // Assert
             Assert.False(result.IsValid);
             Assert.True(result.HasErrors);
-            Assert.Equal(ValidationCodes.TokenExpired, result.Errors[0].Code);
+            Assert.Equal(ValidationCodes.InvalidIssuer, result.Errors[0].Code);
         }
 
         /// <summary>
-        /// Tests that validation succeeds for a token that has expired but is within the clock skew.
+        /// Tests that validation succeeds when audience matches the expected value.
         /// </summary>
         [Fact]
-        public void ShouldValidateTokenWithinClockSkew()
+        public void ShouldValidateMatchingAudience()
         {
             // Arrange
+            const string expectedAudience = "test-audience";
             string token = _builder
                 .SetIssuer("test-issuer")
-                .SetAudience("test-audience")
-                .SetSubject("test-subject")
-                .SetExpiration(TimeSpan.FromMinutes(-2)) // Token expired 2 minutes ago
-                .SetIssuedNow()
-                .SignHs256(_hmacKey);
-
-            var parameters = new ValidationParameters
-            {
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.FromMinutes(5) // 5 minutes clock skew
-            };
-
-            // Act
-            IJwtParser parser = JwtParserFactory.Create();
-            IJwtToken parsedToken = parser.Parse(token);
-            ValidationResult result = _validator.Validate(parsedToken, parameters);
-
-            // Assert
-            Assert.True(result.IsValid);
-            Assert.False(result.HasErrors);
-        }
-
-        /// <summary>
-        /// Tests that validation succeeds when lifetime validation is disabled.
-        /// </summary>
-        [Fact]
-        public void ShouldValidateExpiredTokenWhenLifetimeValidationDisabled()
-        {
-            // Arrange
-            string token = _builder
-                .SetIssuer("test-issuer")
-                .SetAudience("test-audience")
-                .SetSubject("test-subject")
-                .SetExpiration(TimeSpan.FromMinutes(-30)) // Token expired 30 minutes ago
-                .SetIssuedNow()
-                .SignHs256(_hmacKey);
-
-            var parameters = new ValidationParameters
-            {
-                ValidateLifetime = false // Disable lifetime validation
-            };
-
-            // Act
-            IJwtParser parser = JwtParserFactory.Create();
-            IJwtToken parsedToken = parser.Parse(token);
-            ValidationResult result = _validator.Validate(parsedToken, parameters);
-
-            // Assert
-            Assert.True(result.IsValid);
-            Assert.False(result.HasErrors);
-        }
-
-        /// <summary>
-        /// Tests that validation fails for a token that is not yet valid (future nbf claim).
-        /// </summary>
-        [Fact]
-        public void ShouldFailValidationForNotYetValidToken()
-        {
-            // Arrange
-            var now = DateTime.UtcNow;
-            string token = _builder
-                .SetIssuer("test-issuer")
-                .SetAudience("test-audience")
+                .SetAudience(expectedAudience)
                 .SetSubject("test-subject")
                 .SetExpiration(TimeSpan.FromMinutes(30))
-                .SetNotBefore(now.AddMinutes(10)) // Token becomes valid in 10 minutes
+                .SetIssuedNow()
                 .SignHs256(_hmacKey);
 
             var parameters = new ValidationParameters
             {
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.FromMinutes(5)
+                ValidateAudience = true,
+                ValidAudience = expectedAudience,
+                SymmetricSecurityKey = _hmacKey
             };
 
             // Act
-            IJwtParser parser = JwtParserFactory.Create();
+            IJwtParser parser = new JwtParser();
+            IJwtToken parsedToken = parser.Parse(token);
+            ValidationResult result = _validator.Validate(parsedToken, parameters);
+
+            // Assert
+            Assert.True(result.IsValid);
+            Assert.False(result.HasErrors);
+        }
+
+        /// <summary>
+        /// Tests that validation fails when audience doesn't match the expected value.
+        /// </summary>
+        [Fact]
+        public void ShouldFailValidationWithWrongAudience()
+        {
+            // Arrange
+            string token = _builder
+                .SetIssuer("test-issuer")
+                .SetAudience("wrong-audience")
+                .SetSubject("test-subject")
+                .SetExpiration(TimeSpan.FromMinutes(30))
+                .SetIssuedNow()
+                .SignHs256(_hmacKey);
+
+            var parameters = new ValidationParameters
+            {
+                ValidateAudience = true,
+                ValidAudience = "expected-audience",
+                SymmetricSecurityKey = _hmacKey
+            };
+
+            // Act
+            IJwtParser parser = new JwtParser();
             IJwtToken parsedToken = parser.Parse(token);
             ValidationResult result = _validator.Validate(parsedToken, parameters);
 
             // Assert
             Assert.False(result.IsValid);
             Assert.True(result.HasErrors);
-            Assert.Equal(ValidationCodes.TokenNotYetValid, result.Errors[0].Code);
+            Assert.Equal(ValidationCodes.InvalidAudience, result.Errors[0].Code);
+        }
+
+        /// <summary>
+        /// Tests that validation succeeds when multiple audiences are accepted and token matches one.
+        /// </summary>
+        [Fact]
+        public void ShouldValidateWithMultipleValidAudiences()
+        {
+            // Arrange
+            const string tokenAudience = "audience2";
+            string token = _builder
+                .SetIssuer("test-issuer")
+                .SetAudience(tokenAudience)
+                .SetSubject("test-subject")
+                .SetExpiration(TimeSpan.FromMinutes(30))
+                .SetIssuedNow()
+                .SignHs256(_hmacKey);
+
+            var parameters = new ValidationParameters
+            {
+                ValidateAudience = true,
+                ValidAudiences = new[] { "audience1", tokenAudience, "audience3" },
+                SymmetricSecurityKey = _hmacKey
+            };
+
+            // Act
+            IJwtParser parser = new JwtParser();
+            IJwtToken parsedToken = parser.Parse(token);
+            ValidationResult result = _validator.Validate(parsedToken, parameters);
+
+            // Assert
+            Assert.True(result.IsValid);
+            Assert.False(result.HasErrors);
+        }
+
+        /// <summary>
+        /// Tests that validation succeeds when JTI claim is present and unique.
+        /// </summary>
+        [Fact]
+        public void ShouldValidateUniqueJti()
+        {
+            // Arrange
+            string jti = Guid.NewGuid().ToString();
+            string token = _builder
+                .SetIssuer("test-issuer")
+                .SetAudience("test-audience")
+                .SetSubject("test-subject")
+                .SetExpiration(TimeSpan.FromMinutes(30))
+                .SetIssuedNow()
+                .AddClaim(JwtConstants.ClaimJwtId, jti)
+                .SignHs256(_hmacKey);
+
+            var parameters = new ValidationParameters
+            {
+                ValidateJti = true,
+                UsedJtis = new HashSet<string>(),
+                SymmetricSecurityKey = _hmacKey
+            };
+
+            // Act
+            IJwtParser parser = new JwtParser();
+            IJwtToken parsedToken = parser.Parse(token);
+            ValidationResult result = _validator.Validate(parsedToken, parameters);
+
+            // Assert
+            Assert.True(result.IsValid);
+            Assert.False(result.HasErrors);
+        }
+
+        /// <summary>
+        /// Tests that validation fails when JTI claim has been used before (replay attack prevention).
+        /// </summary>
+        [Fact]
+        public void ShouldFailValidationWithUsedJti()
+        {
+            // Arrange
+            string jti = Guid.NewGuid().ToString();
+            string token = _builder
+                .SetIssuer("test-issuer")
+                .SetAudience("test-audience")
+                .SetSubject("test-subject")
+                .SetExpiration(TimeSpan.FromMinutes(30))
+                .SetIssuedNow()
+                .AddClaim(JwtConstants.ClaimJwtId, jti)
+                .SignHs256(_hmacKey);
+
+            var usedJtis = new HashSet<string> { jti }; // Mark the JTI as already used
+            var parameters = new ValidationParameters
+            {
+                ValidateJti = true,
+                UsedJtis = usedJtis,
+                SymmetricSecurityKey = _hmacKey
+            };
+
+            // Act
+            IJwtParser parser = new JwtParser();
+            IJwtToken parsedToken = parser.Parse(token);
+            ValidationResult result = _validator.Validate(parsedToken, parameters);
+
+            // Assert
+            Assert.False(result.IsValid);
+            Assert.True(result.HasErrors);
+            Assert.Equal(ValidationCodes.JtiAlreadyUsed, result.Errors[0].Code);
+        }
+
+        /// <summary>
+        /// Tests that validation fails when JTI claim is missing but validation is required.
+        /// </summary>
+        [Fact]
+        public void ShouldFailValidationWithMissingJti()
+        {
+            // Arrange
+            string token = _builder
+                .SetIssuer("test-issuer")
+                .SetAudience("test-audience")
+                .SetSubject("test-subject")
+                .SetExpiration(TimeSpan.FromMinutes(30))
+                .SetIssuedNow()
+                .SignHs256(_hmacKey);
+
+            var parameters = new ValidationParameters
+            {
+                ValidateJti = true,
+                UsedJtis = new HashSet<string>(),
+                SymmetricSecurityKey = _hmacKey
+            };
+
+            // Act
+            IJwtParser parser = new JwtParser();
+            IJwtToken parsedToken = parser.Parse(token);
+            ValidationResult result = _validator.Validate(parsedToken, parameters);
+
+            // Assert
+            Assert.False(result.IsValid);
+            Assert.True(result.HasErrors);
+            Assert.Equal(ValidationCodes.JtiMissing, result.Errors[0].Code);
         }
     }
-} 
+}

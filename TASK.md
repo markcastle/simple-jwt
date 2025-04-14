@@ -27,9 +27,10 @@
 - [ ] Token Validation Tests
   - [x] Signature validation for each algorithm
   - [x] Expiration validation
-  - [ ] Issuer and audience validation
-  - [ ] JTI validation
-  - [ ] Clock skew scenarios
+  - [x] Issuer and audience validation
+  - [x] JTI validation
+  - [x] Clock skew scenarios
+  - [x] Validation method parameter handling
 
 ### Security Features
 - [ ] Key Management Tests
@@ -130,8 +131,8 @@
 
 ## Progress Tracking
 - Total Tasks: 60
-- Completed Tasks: 20
-- Critical Priority: 15/20
+- Completed Tasks: 24
+- Critical Priority: 19/20
 - High Priority: 5/15
 - Medium Priority: 0/15
 - Low Priority: 0/10

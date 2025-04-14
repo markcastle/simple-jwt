@@ -60,6 +60,16 @@ namespace SimpleJwt.Abstractions.Validation
         public bool ValidateJti { get; set; } = false;
 
         /// <summary>
+        /// Gets or sets a delegate to validate the token ID (jti) to prevent replay attacks.
+        /// </summary>
+        public Func<string, bool> JtiValidator { get; set; }
+
+        /// <summary>
+        /// Gets or sets a collection of used JTIs to prevent replay attacks.
+        /// </summary>
+        public ISet<string> UsedJtis { get; set; } = new HashSet<string>();
+
+        /// <summary>
         /// Gets or sets a value indicating whether to save validated tokens to a cache to improve performance.
         /// </summary>
         public bool EnableCaching { get; set; } = false;
@@ -88,11 +98,6 @@ namespace SimpleJwt.Abstractions.Validation
         /// Gets or sets a dictionary of key IDs to security keys for key rotation support.
         /// </summary>
         public IDictionary<string, object> SecurityKeys { get; set; } = new Dictionary<string, object>();
-
-        /// <summary>
-        /// Gets or sets a delegate to validate the token ID (jti) to prevent replay attacks.
-        /// </summary>
-        public Func<string, bool> JtiValidator { get; set; }
 
         /// <summary>
         /// Gets or sets a delegate to validate the token's confirmation method (cnf) claim.

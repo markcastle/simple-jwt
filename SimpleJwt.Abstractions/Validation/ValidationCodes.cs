@@ -44,5 +44,15 @@ namespace SimpleJwt.Abstractions.Validation
         /// A claim in the token has an invalid value.
         /// </summary>
         public const string InvalidClaimValue = "invalid_claim_value";
+
+        /// <summary>
+        /// The JTI claim is missing from the token.
+        /// </summary>
+        public const string JtiMissing = "jti_missing";
+
+        /// <summary>
+        /// The JTI claim has already been used (replay attack prevention).
+        /// </summary>
+        public const string JtiAlreadyUsed = "jti_already_used";
     }
 } 

@@ -77,7 +77,7 @@ namespace SimpleJwt.Core.Validation
             ValidationResult result = ValidationResult.Success();
 
             // Validate expiration
-            if (parameters.ValidateLifetime && _validateExpiration)
+            if (parameters.ValidateLifetime)
             {
                 var expirationResult = ValidateExpirationTime(token);
                 if (!expirationResult.IsValid)
@@ -87,7 +87,7 @@ namespace SimpleJwt.Core.Validation
             }
 
             // Validate not before
-            if (parameters.ValidateLifetime && _validateNotBefore)
+            if (parameters.ValidateLifetime)
             {
                 var notBeforeResult = ValidateNotBeforeTime(token);
                 if (!notBeforeResult.IsValid)
@@ -97,9 +97,9 @@ namespace SimpleJwt.Core.Validation
             }
 
             // Validate issuer
-            if (parameters.ValidateIssuer && !string.IsNullOrEmpty(_issuer))
+            if (parameters.ValidateIssuer)
             {
-                var issuerResult = ValidateIssuer(token);
+                var issuerResult = ValidateIssuer(token, parameters);
                 if (!issuerResult.IsValid)
                 {
                     return issuerResult;
@@ -107,9 +107,9 @@ namespace SimpleJwt.Core.Validation
             }
 
             // Validate audience
-            if (parameters.ValidateAudience && !string.IsNullOrEmpty(_audience))
+            if (parameters.ValidateAudience)
             {
-                var audienceResult = ValidateAudience(token);
+                var audienceResult = ValidateAudience(token, parameters);
                 if (!audienceResult.IsValid)
                 {
                     return audienceResult;
@@ -117,12 +117,22 @@ namespace SimpleJwt.Core.Validation
             }
 
             // Validate signature
-            if (parameters.ValidateSignature && _hmacKey != null)
+            if (parameters.ValidateSignature && parameters.SymmetricSecurityKey != null)
             {
-                var signatureResult = ValidateSignature(token);
+                var signatureResult = ValidateSignature(token, parameters.SymmetricSecurityKey);
                 if (!signatureResult.IsValid)
                 {
                     return signatureResult;
+                }
+            }
+
+            // Validate JTI
+            if (parameters.ValidateJti)
+            {
+                var jtiResult = ValidateJti(token, parameters);
+                if (!jtiResult.IsValid)
+                {
+                    return jtiResult;
                 }
             }
 
@@ -243,7 +253,7 @@ namespace SimpleJwt.Core.Validation
         public IJwtValidator SetHmacKey(byte[] key)
         {
             _hmacKey = key ?? throw new ArgumentNullException(nameof(key));
-            _validators.Add(ValidateSignature);
+            _validators.Add(token => ValidateSignature(token, _hmacKey));
             return this;
         }
 
@@ -255,7 +265,7 @@ namespace SimpleJwt.Core.Validation
         public IJwtValidator SetIssuer(string issuer)
         {
             _issuer = issuer;
-            _validators.Add(ValidateIssuer);
+            _validators.Add(token => ValidateIssuer(token, new ValidationParameters { ValidIssuer = _issuer }));
             return this;
         }
 
@@ -267,7 +277,7 @@ namespace SimpleJwt.Core.Validation
         public IJwtValidator SetAudience(string audience)
         {
             _audience = audience;
-            _validators.Add(ValidateAudience);
+            _validators.Add(token => ValidateAudience(token, new ValidationParameters { ValidAudience = _audience }));
             return this;
         }
 
@@ -318,85 +328,6 @@ namespace SimpleJwt.Core.Validation
             return this;
         }
 
-        private ValidationResult ValidateSignature(IJwtToken token)
-        {
-            string algorithm = token.Header.GetStringOrDefault(Abstractions.JwtConstants.HeaderAlgorithm, string.Empty);
-
-            // No algorithm specified
-            if (string.IsNullOrEmpty(algorithm))
-            {
-                return ValidationResult.Failure(ValidationCodes.InvalidSignature, "No algorithm specified in token header.");
-            }
-
-            // None algorithm (no signature)
-            if (algorithm == Abstractions.JwtConstants.AlgorithmNone)
-            {
-                // If using the 'none' algorithm, verify there's no signature
-                if (!string.IsNullOrEmpty(token.Signature))
-                {
-                    return ValidationResult.Failure(ValidationCodes.InvalidSignature, "Token uses 'none' algorithm but has a signature.");
-                }
-
-                return ValidationResult.Success();
-            }
-
-            // Verify the signature is present
-            if (string.IsNullOrEmpty(token.Signature))
-            {
-                return ValidationResult.Failure(ValidationCodes.InvalidSignature, "Token is missing a signature.");
-            }
-
-            // HMAC algorithms
-            if (algorithm == Abstractions.JwtConstants.AlgorithmHs256)
-            {
-                return VerifyHmacSignature(token, SHA256.Create());
-            }
-            else if (algorithm == Abstractions.JwtConstants.AlgorithmHs384)
-            {
-                return VerifyHmacSignature(token, SHA384.Create());
-            }
-            else if (algorithm == Abstractions.JwtConstants.AlgorithmHs512)
-            {
-                return VerifyHmacSignature(token, SHA512.Create());
-            }
-
-            // ... other algorithm verification ...
-
-            return ValidationResult.Failure(ValidationCodes.InvalidSignature, $"Unsupported algorithm: {algorithm}");
-        }
-
-        private ValidationResult ValidateIssuer(IJwtToken token)
-        {
-            if (!token.Payload.TryGetValue(Abstractions.JwtConstants.ClaimIssuer, out object issuerClaim))
-            {
-                return ValidationResult.Failure(ValidationCodes.InvalidIssuer, $"Token is missing the required '{Abstractions.JwtConstants.ClaimIssuer}' claim.");
-            }
-
-            string issuer = issuerClaim?.ToString();
-            if (string.IsNullOrEmpty(issuer) || issuer != _issuer)
-            {
-                return ValidationResult.Failure(ValidationCodes.InvalidIssuer, "Token issuer does not match the expected issuer.");
-            }
-
-            return ValidationResult.Success();
-        }
-
-        private ValidationResult ValidateAudience(IJwtToken token)
-        {
-            if (!token.Payload.TryGetValue(Abstractions.JwtConstants.ClaimAudience, out object audienceClaim))
-            {
-                return ValidationResult.Failure(ValidationCodes.InvalidAudience, $"Token is missing the required '{Abstractions.JwtConstants.ClaimAudience}' claim.");
-            }
-
-            string audience = audienceClaim?.ToString();
-            if (string.IsNullOrEmpty(audience) || audience != _audience)
-            {
-                return ValidationResult.Failure(ValidationCodes.InvalidAudience, "Token audience does not match the expected audience.");
-            }
-
-            return ValidationResult.Success();
-        }
-
         private ValidationResult ValidateExpirationTime(IJwtToken token)
         {
             if (!token.Payload.TryGetValue(Abstractions.JwtConstants.ClaimExpirationTime, out object expirationClaim))
@@ -440,7 +371,133 @@ namespace SimpleJwt.Core.Validation
             return ValidationResult.Success();
         }
 
-        private ValidationResult VerifyHmacSignature(IJwtToken token, HashAlgorithm hashAlgorithm)
+        private ValidationResult ValidateIssuer(IJwtToken token, ValidationParameters parameters)
+        {
+            if (!token.Payload.TryGetValue(Abstractions.JwtConstants.ClaimIssuer, out object issuerClaim))
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidIssuer, $"Token is missing the required '{Abstractions.JwtConstants.ClaimIssuer}' claim.");
+            }
+
+            string issuer = issuerClaim?.ToString();
+            if (string.IsNullOrEmpty(issuer))
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidIssuer, "Token issuer cannot be null or empty.");
+            }
+
+            if (!string.IsNullOrEmpty(parameters.ValidIssuer) && issuer != parameters.ValidIssuer)
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidIssuer, "Token issuer does not match the expected issuer.");
+            }
+
+            if (parameters.ValidIssuers?.Count > 0 && !parameters.ValidIssuers.Contains(issuer))
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidIssuer, "Token issuer is not in the list of valid issuers.");
+            }
+
+            return ValidationResult.Success();
+        }
+
+        private ValidationResult ValidateAudience(IJwtToken token, ValidationParameters parameters)
+        {
+            if (!token.Payload.TryGetValue(Abstractions.JwtConstants.ClaimAudience, out object audienceClaim))
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidAudience, $"Token is missing the required '{Abstractions.JwtConstants.ClaimAudience}' claim.");
+            }
+
+            string audience = audienceClaim?.ToString();
+            if (string.IsNullOrEmpty(audience))
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidAudience, "Token audience cannot be null or empty.");
+            }
+
+            if (!string.IsNullOrEmpty(parameters.ValidAudience) && audience != parameters.ValidAudience)
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidAudience, "Token audience does not match the expected audience.");
+            }
+
+            if (parameters.ValidAudiences?.Count > 0 && !parameters.ValidAudiences.Contains(audience))
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidAudience, "Token audience is not in the list of valid audiences.");
+            }
+
+            return ValidationResult.Success();
+        }
+
+        private ValidationResult ValidateJti(IJwtToken token, ValidationParameters parameters)
+        {
+            if (!token.Payload.TryGetValue(Abstractions.JwtConstants.ClaimJwtId, out object jtiClaim))
+            {
+                return ValidationResult.Failure(ValidationCodes.JtiMissing, $"Token is missing the required '{Abstractions.JwtConstants.ClaimJwtId}' claim.");
+            }
+
+            string jti = jtiClaim?.ToString();
+            if (string.IsNullOrEmpty(jti))
+            {
+                return ValidationResult.Failure(ValidationCodes.JtiMissing, "Token JTI cannot be null or empty.");
+            }
+
+            if (parameters.UsedJtis?.Contains(jti) == true)
+            {
+                return ValidationResult.Failure(ValidationCodes.JtiAlreadyUsed, "Token JTI has already been used.");
+            }
+
+            if (parameters.JtiValidator != null && !parameters.JtiValidator(jti))
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidClaimValue, "Token JTI failed custom validation.");
+            }
+
+            // Add the JTI to the used set if validation passed
+            parameters.UsedJtis?.Add(jti);
+
+            return ValidationResult.Success();
+        }
+
+        private ValidationResult ValidateSignature(IJwtToken token, byte[] key)
+        {
+            string algorithm = token.Header.GetStringOrDefault(Abstractions.JwtConstants.HeaderAlgorithm, string.Empty);
+
+            // No algorithm specified
+            if (string.IsNullOrEmpty(algorithm))
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidSignature, "No algorithm specified in token header.");
+            }
+
+            // None algorithm (no signature)
+            if (algorithm == Abstractions.JwtConstants.AlgorithmNone)
+            {
+                // If using the 'none' algorithm, verify there's no signature
+                if (!string.IsNullOrEmpty(token.Signature))
+                {
+                    return ValidationResult.Failure(ValidationCodes.InvalidSignature, "Token uses 'none' algorithm but has a signature.");
+                }
+
+                return ValidationResult.Success();
+            }
+
+            // Verify the signature is present
+            if (string.IsNullOrEmpty(token.Signature))
+            {
+                return ValidationResult.Failure(ValidationCodes.InvalidSignature, "Token is missing a signature.");
+            }
+
+            // HMAC algorithms
+            if (algorithm == Abstractions.JwtConstants.AlgorithmHs256)
+            {
+                return VerifyHmacSignature(token, SHA256.Create(), key);
+            }
+            else if (algorithm == Abstractions.JwtConstants.AlgorithmHs384)
+            {
+                return VerifyHmacSignature(token, SHA384.Create(), key);
+            }
+            else if (algorithm == Abstractions.JwtConstants.AlgorithmHs512)
+            {
+                return VerifyHmacSignature(token, SHA512.Create(), key);
+            }
+
+            return ValidationResult.Failure(ValidationCodes.InvalidSignature, $"Unsupported algorithm: {algorithm}");
+        }
+
+        private ValidationResult VerifyHmacSignature(IJwtToken token, HashAlgorithm hashAlgorithm, byte[] key)
         {
             if (!token.TryGetHeaderClaim<string>(Abstractions.JwtConstants.HeaderAlgorithm, out var algorithm))
             {
@@ -467,7 +524,7 @@ namespace SimpleJwt.Core.Validation
             bool isValid = false;
 
             // Use the appropriate HMAC algorithm based on the hash algorithm
-            using (KeyedHashAlgorithm hmac = CreateHmacAlgorithm(algorithm))
+            using (KeyedHashAlgorithm hmac = CreateHmacAlgorithm(algorithm, key))
             {
                 if (hmac != null)
                 {
@@ -484,24 +541,24 @@ namespace SimpleJwt.Core.Validation
             return ValidationResult.Success();
         }
 
-        private KeyedHashAlgorithm CreateHmacAlgorithm(string algorithm)
+        private KeyedHashAlgorithm CreateHmacAlgorithm(string algorithm, byte[] key)
         {
-            if (_hmacKey == null)
+            if (key == null)
             {
                 return null;
             }
 
             if (algorithm == Abstractions.JwtConstants.AlgorithmHs256)
             {
-                return new HMACSHA256(_hmacKey);
+                return new HMACSHA256(key);
             }
             else if (algorithm == Abstractions.JwtConstants.AlgorithmHs384)
             {
-                return new HMACSHA384(_hmacKey);
+                return new HMACSHA384(key);
             }
             else if (algorithm == Abstractions.JwtConstants.AlgorithmHs512)
             {
-                return new HMACSHA512(_hmacKey);
+                return new HMACSHA512(key);
             }
 
             return null;
