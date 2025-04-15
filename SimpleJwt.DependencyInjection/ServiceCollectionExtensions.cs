@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using SimpleJwt.Abstractions;
 using SimpleJwt.Abstractions.Serialization;
+using SimpleJwt.Abstractions.TokenLifetime;
 using SimpleJwt.Abstractions.Validation;
 using SimpleJwt.Core;
 using SimpleJwt.Core.TokenLifetime;
