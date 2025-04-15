@@ -159,15 +159,15 @@
   - [x] Support all caching operations with in-memory storage
   - [x] Implement cache eviction policies and size limiting
 - [ ] Integrate UniCache as optional provider
-  - [ ] Create a new SimpleJwt.UniCache project for UniCache support (optional NuGet)
-  - [ ] Add UniCache and UniCache.Encryption packages to SimpleJwt.UniCache only
-  - [ ] Implement UniCacheTokenRepository and provider integration in SimpleJwt.UniCache
-  - [ ] Support both in-memory and persistent storage modes via DI
-  - [ ] Implement encrypted storage for sensitive token data in UniCache
-    - [ ] Use AES encryption for all persisted tokens
-    - [ ] Implement secure key storage mechanism
-    - [ ] Add salt-based encryption with proper key derivation
-    - [ ] Create key rotation mechanism for long-term security
+  - [x] Create a new SimpleJwt.UniCache project for UniCache support (optional NuGet)
+  - [x] Add UniCache and UniCache.Encryption packages to SimpleJwt.UniCache only
+  - [x] Implement UniCacheTokenRepository and provider integration in SimpleJwt.UniCache
+  - [x] Support both in-memory and persistent storage modes via DI
+  - [x] Implement encrypted storage for sensitive token data in UniCache
+    - [x] Use AES encryption for all persisted tokens
+    - [x] Implement secure key storage mechanism
+    - [x] Add salt-based encryption with proper key derivation
+    - [x] Create key rotation mechanism for long-term security
   - [ ] Create cache expiry policies that align with token lifetimes
 - [x] Build extension methods for easy provider registration
   - [x] Add UseInMemoryCache() extension for default provider
@@ -200,10 +200,10 @@
 
 ## Progress Tracking
 - Total Tasks: 65
-- Completed Tasks: 58
+- Completed Tasks: 63
 - Critical Priority: 24/24
 - High Priority: 15/15
-- Medium Priority: 16/20
+- Medium Priority: 20/20
 - Low Priority: 0/10
 
 Last Updated: 2025-04-15

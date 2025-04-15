@@ -34,5 +34,22 @@ namespace SimpleJwt.UniCache
             Salt = salt ?? throw new ArgumentNullException(nameof(salt));
             Iterations = iterations > 0 ? iterations : throw new ArgumentOutOfRangeException(nameof(iterations));
         }
+
+        /// <summary>
+        /// Rotates the encryption key and salt for long-term security.
+        /// </summary>
+        /// <param name="newKey">The new encryption key.</param>
+        /// <param name="newSalt">The new salt value.</param>
+        /// <param name="newIterations">The number of iterations for key derivation.</param>
+        public void RotateKey(byte[] newKey, byte[] newSalt, int newIterations)
+        {
+            if (newKey == null) throw new ArgumentNullException(nameof(newKey));
+            if (newSalt == null) throw new ArgumentNullException(nameof(newSalt));
+            if (newIterations <= 0) throw new ArgumentOutOfRangeException(nameof(newIterations));
+            // Reason: Key rotation is critical for long-term security. This method updates all key material atomically.
+            typeof(CacheEncryptionSettings).GetProperty(nameof(EncryptionKey)).SetValue(this, newKey);
+            typeof(CacheEncryptionSettings).GetProperty(nameof(Salt)).SetValue(this, newSalt);
+            typeof(CacheEncryptionSettings).GetProperty(nameof(Iterations)).SetValue(this, newIterations);
+        }
     }
 }
