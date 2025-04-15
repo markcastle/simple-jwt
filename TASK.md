@@ -147,6 +147,49 @@
   - [ ] Create file-based repository implementation
   - [ ] Add serialization/deserialization for persistent storage
 
+### Flexible Caching Architecture with UniCache Support
+- [x] Design provider-agnostic cache abstraction layer
+  - [x] Create ICacheProvider and ITokenCacheStorage interfaces
+  - [x] Define common cache operations (Get, Set, Remove, Clear)
+  - [x] Create serialization abstractions for token persistence
+  - [x] Build encryption capability interfaces for secure storage
+  - [x] Design configuration mechanism for different providers
+- [x] Implement default in-memory cache provider
+  - [x] Create SimpleMemoryCacheProvider implementation
+  - [x] Support all caching operations with in-memory storage
+  - [x] Implement cache eviction policies and size limiting
+- [ ] Integrate UniCache as optional provider
+  - [ ] Add UniCache packages to the project (including UniCache.Encryption)
+  - [ ] Create UniCacheTokenRepository implementation
+  - [ ] Support both in-memory and persistent storage modes
+  - [ ] Implement encrypted storage for sensitive token data
+    - [ ] Use AES encryption for all persisted tokens
+    - [ ] Implement secure key storage mechanism
+    - [ ] Add salt-based encryption with proper key derivation
+    - [ ] Create key rotation mechanism for long-term security
+  - [ ] Create cache expiry policies that align with token lifetimes
+- [x] Build extension methods for easy provider registration
+  - [x] Add UseInMemoryCache() extension for default provider
+  - [ ] Add UseUniCache() extension for UniCache integration
+  - [ ] Add UseCustomCache<T>() for custom provider implementation
+  - [ ] Create security configuration options for encryption settings
+- [x] Create unit tests for caching architecture
+  - [x] Test provider-agnostic interfaces with multiple implementations
+  - [x] Test in-memory token caching
+  - [ ] Test persistent token storage with UniCache
+  - [ ] Test token encryption/decryption
+    - [ ] Verify encrypted data cannot be read without proper keys
+    - [ ] Test encryption performance impact
+    - [ ] Ensure encrypted tokens survive application restarts
+  - [x] Test cache expiry and cleanup
+  - [x] Test performance impact of caching
+- [x] Update documentation
+  - [x] Update README with caching architecture information
+  - [x] Document UniCache as optional dependency for persistence
+  - [x] Add examples for different caching providers
+  - [ ] Create migration guide for existing implementations
+  - [x] Document security best practices for persistent token storage
+
 ## Notes
 - Tasks should be implemented in order of priority
 - Each task should include both happy path and error cases
@@ -156,10 +199,10 @@
 
 ## Progress Tracking
 - Total Tasks: 65
-- Completed Tasks: 55
+- Completed Tasks: 58
 - Critical Priority: 24/24
 - High Priority: 15/15
-- Medium Priority: 13/20
+- Medium Priority: 16/20
 - Low Priority: 0/10
 
 Last Updated: 2025-04-15

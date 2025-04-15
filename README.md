@@ -545,6 +545,8 @@ This dual-caching approach is particularly effective in scenarios where:
 - Token parsing or cryptographic operations are performance bottlenecks
 - You're handling a large volume of token validations in a short time
 
+
+
 ### 🗄️ Token Repository
 
 SimpleJwt provides a token repository system to store and manage tokens throughout their lifecycle:
@@ -982,6 +984,49 @@ When using SimpleJwt in Unity:
 3. Ensure you have the Newtonsoft.Json package installed in your Unity project
 
 The library has been refactored to eliminate any direct dependency on System.Text.Json in the core components, ensuring complete compatibility with Unity's IL2CPP scripting backend.
+
+## 🗃️ Flexible Caching Architecture for SimpleJwt
+
+SimpleJwt now includes a provider-agnostic caching system for JWT tokens and validation results, supporting both in-memory and persistent storage. The caching system is designed for extensibility, security, and performance.
+
+### Caching Abstractions
+- `ICacheProvider<TKey, TValue>`: Generic async cache provider interface.
+- `ITokenCacheStorage`: Specialized for JWT tokens.
+- `ICacheSerializer`: For serialization/deserialization of cache values.
+- `ICacheEncryptionProvider`: For encrypting/decrypting cache values.
+
+### In-Memory Cache Provider
+- `SimpleMemoryCacheProvider<TKey, TValue>`: High-performance, thread-safe in-memory cache with FIFO eviction and configurable size limits.
+- Fully tested for concurrency, expiry, and edge cases.
+
+### Usage Example
+```csharp
+var cache = new SimpleMemoryCacheProvider<string, MyToken>(maxSize: 100);
+await cache.SetAsync("tokenKey", myToken, TimeSpan.FromMinutes(10));
+var token = await cache.GetAsync("tokenKey");
+```
+
+### Extending with UniCache (Persistent/Encrypted)
+- UniCache integration is supported for persistent and encrypted cache scenarios.
+- To use UniCache, install the [UniCache NuGet package](https://www.nuget.org/packages/UniCache) and implement the `ICacheProvider` interface.
+- Encryption is supported via `ICacheEncryptionProvider` (AES recommended).
+
+### Security Best Practices
+- Always encrypt persisted tokens with a strong encryption provider (AES-256 recommended).
+- Use secure key storage and enable key rotation for long-term security.
+- Never store sensitive tokens unencrypted on disk.
+
+### Provider Registration (DI)
+```csharp
+// Register the default in-memory cache:
+services.AddSingleton<ICacheProvider<string, IJwtToken>, SimpleMemoryCacheProvider<string, IJwtToken>>();
+
+// (Planned) Register UniCache or custom providers:
+// services.AddSingleton<ICacheProvider<string, IJwtToken>, UniCacheProvider<string, IJwtToken>>();
+```
+
+See the [Flexible Caching Architecture section in the documentation](docs/caching.md) for more details and migration guides.
+
 
 ## 🚀 Quick Start
 
