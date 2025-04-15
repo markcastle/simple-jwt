@@ -94,12 +94,12 @@
   - [x] Concurrent cache access
 
 ### Token Repository
-- [ ] Token Repository Implementation
-  - [ ] Store issued tokens
-  - [ ] Query tokens by user ID
-  - [ ] Proper RevokeAllForUser implementation
-  - [ ] Repository cleanup (expired tokens)
-  - [ ] Thread-safe access
+- [x] Token Repository Implementation
+  - [x] Store issued tokens
+  - [x] Query tokens by user ID
+  - [x] Proper RevokeAllForUser implementation
+  - [x] Repository cleanup (expired tokens)
+  - [x] Thread-safe access
 
 ### Unity Integration
 - [ ] Unity-Specific Tests
@@ -130,6 +130,23 @@
   - [ ] API usage examples
   - [ ] Best practices validation
 
+## Discovered During Work
+
+### Token Repository and Caching Improvements
+- [ ] Add additional test cases for TokenRepositoryRevoker
+  - [ ] Test async revocation operations
+  - [ ] Test user-based revocation with larger datasets
+  - [ ] Test integration with the validation system
+- [ ] Add performance benchmarks for repository operations
+  - [ ] Measure repository read/write performance under load
+  - [ ] Compare performance with different repository sizes
+- [ ] Improve cleanup mechanism tests
+  - [ ] Test automatic cleanup triggering
+  - [ ] Test cleanup with different interval settings
+- [ ] Add persistence layer for token repository
+  - [ ] Create file-based repository implementation
+  - [ ] Add serialization/deserialization for persistent storage
+
 ## Notes
 - Tasks should be implemented in order of priority
 - Each task should include both happy path and error cases
@@ -139,18 +156,24 @@
 
 ## Progress Tracking
 - Total Tasks: 65
-- Completed Tasks: 50
+- Completed Tasks: 55
 - Critical Priority: 24/24
 - High Priority: 15/15
-- Medium Priority: 8/20
+- Medium Priority: 13/20
 - Low Priority: 0/10
 
-Last Updated: 2024-04-14
+Last Updated: 2025-04-15
 
 ## Recent Updates
+- Implemented TokenRepository for storing and managing JWT tokens
+- Added TokenRepositoryRevoker that integrates with the token repository for better token tracking
+- Added thread-safe implementation with automatic cleanup of expired tokens
 - Implemented in-memory token caching to improve performance
 - Added comprehensive cache implementation with hit/miss tracking, invalidation, size limits, and thread safety
 - Fixed concurrency issues in the caching implementation 
+- Implemented asynchronous cache eviction to improve performance and prevent blocking
+- Added synchronous eviction option for testing scenarios
+- Fixed thread safety issues in concurrent cache access testing
 - Implemented comprehensive performance testing framework for SimpleJwt
 - Added benchmarks for token creation, parsing, and validation with different token sizes and algorithms
 - Added memory allocation pattern analysis to identify potential optimization opportunities

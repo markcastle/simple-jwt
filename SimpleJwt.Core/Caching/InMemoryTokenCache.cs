@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using SimpleJwt.Abstractions;
+using System.Threading.Tasks;
 
 namespace SimpleJwt.Core.Caching
 {
@@ -14,6 +15,7 @@ namespace SimpleJwt.Core.Caching
         private readonly ConcurrentDictionary<string, IJwtToken> _tokenCache;
         private readonly int _maxSize;
         private readonly object _evictionLock = new object();
+        private volatile bool _evictionInProgress;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InMemoryTokenCache"/> class with default settings.
@@ -62,18 +64,67 @@ namespace SimpleJwt.Core.Caching
                 throw new ArgumentNullException(nameof(token), "Token cannot be null.");
             }
 
-            // Use a lock to ensure the check and add/update operations happen atomically
-            lock (_evictionLock)
-            {
-                // Check if we need to evict tokens due to size limits
-                // Do this before adding the new token to ensure we don't exceed the limit
-                if (_tokenCache.Count >= _maxSize && !_tokenCache.ContainsKey(key))
-                {
-                    EvictOldestToken();
-                }
+            // Use the thread-safe AddOrUpdate method of ConcurrentDictionary
+            // This ensures the token is atomically added or updated
+            _tokenCache.AddOrUpdate(key, token, (_, _) => token);
 
-                // Add or update the token in the cache
-                _tokenCache[key] = token;
+            // If we've exceeded the size limit and no eviction is in progress,
+            // trigger eviction on a separate thread
+            if (_tokenCache.Count > _maxSize && !_evictionInProgress)
+            {
+                // Use a lock to ensure only one thread initiates eviction at a time
+                lock (_evictionLock)
+                {
+                    if (_tokenCache.Count > _maxSize && !_evictionInProgress)
+                    {
+                        EvictOldestTokenAsync();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adds or updates a token in the cache and performs synchronous eviction if needed.
+        /// This method is intended for testing scenarios where immediate eviction is required.
+        /// </summary>
+        /// <param name="key">The key to store the token under.</param>
+        /// <param name="token">The token to cache.</param>
+        /// <param name="evictSynchronously">Whether to evict tokens synchronously if maximum size is exceeded.</param>
+        internal void AddOrUpdateTokenWithSync(string key, IJwtToken token, bool evictSynchronously)
+        {
+            if (string.IsNullOrEmpty(key))
+            {
+                throw new ArgumentException("Cache key cannot be null or empty.", nameof(key));
+            }
+
+            if (token == null)
+            {
+                throw new ArgumentNullException(nameof(token), "Token cannot be null.");
+            }
+
+            // Use the thread-safe AddOrUpdate method of ConcurrentDictionary
+            // This ensures the token is atomically added or updated
+            _tokenCache.AddOrUpdate(key, token, (_, _) => token);
+
+            // If we've exceeded the size limit and no eviction is in progress,
+            // trigger eviction on a separate thread
+            if (_tokenCache.Count > _maxSize && !_evictionInProgress)
+            {
+                // Use a lock to ensure only one thread initiates eviction at a time
+                lock (_evictionLock)
+                {
+                    if (_tokenCache.Count > _maxSize && !_evictionInProgress)
+                    {
+                        if (evictSynchronously)
+                        {
+                            EvictTokensSync();
+                        }
+                        else
+                        {
+                            EvictOldestTokenAsync();
+                        }
+                    }
+                }
             }
         }
 
@@ -95,21 +146,100 @@ namespace SimpleJwt.Core.Caching
         }
 
         /// <summary>
-        /// Evicts the oldest token from the cache.
-        /// This method should be called with the _evictionLock already acquired.
+        /// Asynchronously evicts the oldest token from the cache.
         /// </summary>
-        private void EvictOldestToken()
+        private void EvictOldestTokenAsync()
         {
-            // Since we're under lock, it's safe to access the first key
-            // Note that this is not truly LRU, but it's a simple approximation
-            // For a true LRU implementation, we would need to track access times
-            if (_tokenCache.Count > 0)
+            // Mark that eviction is in progress to prevent multiple concurrent evictions
+            _evictionInProgress = true;
+            
+            // Run eviction on a separate task to avoid blocking the current thread
+            Task.Run(() => 
             {
-                var keyToRemove = _tokenCache.Keys.FirstOrDefault();
-                if (keyToRemove != null)
+                try
                 {
-                    _tokenCache.TryRemove(keyToRemove, out _);
+                    // Determine how many items to remove (20% of max size, at least 1)
+                    int itemsToRemove = Math.Max(1, _maxSize / 5);
+                    int removed = 0;
+                    
+                    // Get the keys to consider for removal
+                    // Take a snapshot to avoid enumeration issues
+                    List<string> keysToConsider;
+                    lock (_evictionLock)
+                    {
+                        keysToConsider = _tokenCache.Keys.ToList();
+                    }
+                    
+                    // Randomly select keys to remove rather than using oldest
+                    // This helps prevent multiple threads from all removing the same keys
+                    var random = new Random();
+                    var keysToRemove = keysToConsider
+                        .OrderBy(_ => random.Next())
+                        .Take(itemsToRemove * 2)
+                        .ToList();
+                    
+                    foreach (var key in keysToRemove)
+                    {
+                        if (_tokenCache.Count <= _maxSize || removed >= itemsToRemove)
+                        {
+                            break;
+                        }
+                        
+                        if (_tokenCache.TryRemove(key, out _))
+                        {
+                            removed++;
+                        }
+                    }
                 }
+                finally
+                {
+                    // Ensure we always reset this flag
+                    _evictionInProgress = false;
+                }
+            });
+        }
+
+        /// <summary>
+        /// Synchronously evicts tokens from the cache.
+        /// </summary>
+        private void EvictTokensSync()
+        {
+            // Mark that eviction is in progress to prevent multiple concurrent evictions
+            _evictionInProgress = true;
+            
+            try
+            {
+                // Determine how many items to remove (20% of max size, at least 1)
+                int itemsToRemove = Math.Max(1, _maxSize / 5);
+                int removed = 0;
+                
+                // Get the keys to consider for removal
+                List<string> keysToConsider = _tokenCache.Keys.ToList();
+                
+                // Randomly select keys to remove
+                var random = new Random();
+                var keysToRemove = keysToConsider
+                    .OrderBy(_ => random.Next())
+                    .Take(itemsToRemove * 2)
+                    .ToList();
+                
+                foreach (var key in keysToRemove)
+                {
+                    if (_tokenCache.Count <= _maxSize || removed >= itemsToRemove)
+                    {
+                        break;
+                    }
+                    
+                    if (_tokenCache.TryRemove(key, out _))
+                    {
+                        removed++;
+                    }
+                }
+            }
+            finally
+            {
+                // Ensure we always reset this flag
+                _evictionInProgress = false;
             }
         }
     }

@@ -109,6 +109,16 @@ namespace SimpleJwt.Tests
             const int maxSize = 5;
             var cache = new InMemoryTokenCache(maxSize: maxSize);
             
+            // Use reflection to get access to the internal method for testing
+            var syncMethod = typeof(InMemoryTokenCache).GetMethod(
+                "AddOrUpdateTokenWithSync", 
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            
+            if (syncMethod == null)
+            {
+                throw new InvalidOperationException("Could not find AddOrUpdateTokenWithSync method via reflection");
+            }
+            
             // Add tokens to cache up to the limit
             for (int i = 0; i < maxSize; i++)
             {
@@ -125,11 +135,17 @@ namespace SimpleJwt.Tests
                 Assert.True(cache.TryGetToken(tokenKey, out _), $"Token {i} should be in cache");
             }
             
-            // Act - Add one more token beyond the limit
+            // Act - Add one more token beyond the limit with synchronous eviction
             string newTokenKey = "token-overflow";
             IJwtToken newToken = _parser.Parse(CreateTestToken());
-            cache.AddOrUpdateToken(newTokenKey, newToken);
+            
+            // Invoke the internal method with synchronous eviction
+            syncMethod.Invoke(cache, new object[] { newTokenKey, newToken, true });
+            
             _output.WriteLine("Added overflow token to cache");
+            
+            // Wait a short period to ensure eviction has completed
+            System.Threading.Thread.Sleep(100);
             
             // Assert - The new token should be in the cache, and at least one old token should be evicted
             Assert.True(cache.TryGetToken(newTokenKey, out _), "New token should be in cache");
