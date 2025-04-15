@@ -206,39 +206,21 @@ namespace SimpleJwt.Core.Caching
         {
             // Mark that eviction is in progress to prevent multiple concurrent evictions
             _evictionInProgress = true;
-            
             try
             {
-                // Determine how many items to remove (20% of max size, at least 1)
-                int itemsToRemove = Math.Max(1, _maxSize / 5);
-                int removed = 0;
-                
-                // Get the keys to consider for removal
-                List<string> keysToConsider = _tokenCache.Keys.ToList();
-                
-                // Randomly select keys to remove
-                var random = new Random();
-                var keysToRemove = keysToConsider
-                    .OrderBy(_ => random.Next())
-                    .Take(itemsToRemove * 2)
-                    .ToList();
-                
-                foreach (var key in keysToRemove)
+                // Remove items until the cache is within the size limit (strictly <= _maxSize)
+                while (_tokenCache.Count > _maxSize)
                 {
-                    if (_tokenCache.Count <= _maxSize || removed >= itemsToRemove)
-                    {
-                        break;
-                    }
-                    
-                    if (_tokenCache.TryRemove(key, out _))
-                    {
-                        removed++;
-                    }
+                    // Remove a random key (as before)
+                    var keys = _tokenCache.Keys.ToList();
+                    if (keys.Count == 0) break;
+                    var random = new Random();
+                    var keyToRemove = keys[random.Next(keys.Count)];
+                    _tokenCache.TryRemove(keyToRemove, out _);
                 }
             }
             finally
             {
-                // Ensure we always reset this flag
                 _evictionInProgress = false;
             }
         }
