@@ -159,10 +159,11 @@
   - [x] Support all caching operations with in-memory storage
   - [x] Implement cache eviction policies and size limiting
 - [ ] Integrate UniCache as optional provider
-  - [ ] Add UniCache packages to the project (including UniCache.Encryption)
-  - [ ] Create UniCacheTokenRepository implementation
-  - [ ] Support both in-memory and persistent storage modes
-  - [ ] Implement encrypted storage for sensitive token data
+  - [ ] Create a new SimpleJwt.UniCache project for UniCache support (optional NuGet)
+  - [ ] Add UniCache and UniCache.Encryption packages to SimpleJwt.UniCache only
+  - [ ] Implement UniCacheTokenRepository and provider integration in SimpleJwt.UniCache
+  - [ ] Support both in-memory and persistent storage modes via DI
+  - [ ] Implement encrypted storage for sensitive token data in UniCache
     - [ ] Use AES encryption for all persisted tokens
     - [ ] Implement secure key storage mechanism
     - [ ] Add salt-based encryption with proper key derivation
