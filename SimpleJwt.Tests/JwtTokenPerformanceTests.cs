@@ -54,7 +54,7 @@ namespace SimpleJwt.Tests
         public void ShouldMeasureTokenCreationPerformance()
         {
             // Define test scenarios with different payload sizes
-            var scenarios = new (string Name, Func<string> CreateTokenFunc)[]
+            (string Name, Func<string> CreateTokenFunc)[] scenarios = new (string Name, Func<string> CreateTokenFunc)[]
             {
                 ("Small Token (5 claims)", CreateSmallToken),
                 ("Medium Token (20 claims)", CreateMediumToken),
@@ -62,7 +62,7 @@ namespace SimpleJwt.Tests
             };
 
             // Run each scenario and measure performance
-            foreach (var scenario in scenarios)
+            foreach ((string Name, Func<string> CreateTokenFunc) scenario in scenarios)
             {
                 string name = scenario.Name;
                 Func<string> createTokenFunc = scenario.CreateTokenFunc;
@@ -75,7 +75,7 @@ namespace SimpleJwt.Tests
 
                 // Measure
                 const int iterations = 1000;
-                var watch = Stopwatch.StartNew();
+                Stopwatch watch = Stopwatch.StartNew();
                 
                 for (int i = 0; i < iterations; i++)
                 {
@@ -102,7 +102,7 @@ namespace SimpleJwt.Tests
             string mediumToken = CreateMediumToken();
             string largeToken = CreateLargeToken();
 
-            var scenarios = new (string Name, string Token)[]
+            (string Name, string Token)[] scenarios = new (string Name, string Token)[]
             {
                 ("Small Token Parse", smallToken),
                 ("Medium Token Parse", mediumToken),
@@ -110,7 +110,7 @@ namespace SimpleJwt.Tests
             };
 
             // Run each scenario and measure performance
-            foreach (var scenario in scenarios)
+            foreach ((string Name, string Token) scenario in scenarios)
             {
                 string name = scenario.Name;
                 string token = scenario.Token;
@@ -123,7 +123,7 @@ namespace SimpleJwt.Tests
 
                 // Measure
                 const int iterations = 1000;
-                var watch = Stopwatch.StartNew();
+                Stopwatch watch = Stopwatch.StartNew();
                 
                 for (int i = 0; i < iterations; i++)
                 {
@@ -170,7 +170,7 @@ namespace SimpleJwt.Tests
                 .SetIssuedNow()
                 .SignEs256(_ecdsaKey);
 
-            var scenarios = new (string Name, string Token, ValidationParameters Parameters)[]
+            (string Name, string Token, ValidationParameters Parameters)[] scenarios = new (string Name, string Token, ValidationParameters Parameters)[]
             {
                 ("HS256 Validation", hs256Token, new ValidationParameters { SymmetricSecurityKey = _hmacKey }),
                 ("RS256 Validation", rs256Token, new ValidationParameters { RsaSecurityKey = _rsaKey }),
@@ -178,7 +178,7 @@ namespace SimpleJwt.Tests
             };
 
             // Run each scenario and measure performance
-            foreach (var scenario in scenarios)
+            foreach ((string Name, string Token, ValidationParameters Parameters) scenario in scenarios)
             {
                 string name = scenario.Name;
                 string token = scenario.Token;
@@ -195,7 +195,7 @@ namespace SimpleJwt.Tests
 
                 // Measure
                 const int iterations = 1000;
-                var watch = Stopwatch.StartNew();
+                Stopwatch watch = Stopwatch.StartNew();
                 
                 for (int i = 0; i < iterations; i++)
                 {
@@ -221,7 +221,7 @@ namespace SimpleJwt.Tests
             long beforeCreation = GC.GetTotalMemory(true);
             const int creationIterations = 1000;
             
-            List<string> tokens = new List<string>(creationIterations);
+            List<string> tokens = new(creationIterations);
             for (int i = 0; i < creationIterations; i++)
             {
                 tokens.Add(CreateSmallToken());
@@ -237,7 +237,7 @@ namespace SimpleJwt.Tests
             GC.Collect();
             long beforeParsing = GC.GetTotalMemory(true);
             
-            List<IJwtToken> parsedTokens = new List<IJwtToken>(creationIterations);
+            List<IJwtToken> parsedTokens = new(creationIterations);
             foreach (string token in tokens)
             {
                 parsedTokens.Add(_parser.Parse(token));
@@ -253,7 +253,7 @@ namespace SimpleJwt.Tests
             GC.Collect();
             long beforeValidation = GC.GetTotalMemory(true);
             
-            var parameters = new ValidationParameters { SymmetricSecurityKey = _hmacKey };
+            ValidationParameters parameters = new() { SymmetricSecurityKey = _hmacKey };
             foreach (IJwtToken token in parsedTokens)
             {
                 _validator.Validate(token, parameters);
@@ -278,12 +278,12 @@ namespace SimpleJwt.Tests
             // Create token once for validation tests
             string token = CreateSmallToken();
             IJwtToken parsedToken = _parser.Parse(token);
-            var parameters = new ValidationParameters { SymmetricSecurityKey = _hmacKey };
+            ValidationParameters parameters = new() { SymmetricSecurityKey = _hmacKey };
             
             // Measure concurrent creation
-            var creationWatch = Stopwatch.StartNew();
+            Stopwatch creationWatch = Stopwatch.StartNew();
             
-            var creationTasks = new List<Task>(concurrentOperations);
+            List<Task> creationTasks = new(concurrentOperations);
             for (int i = 0; i < concurrentOperations; i++)
             {
                 creationTasks.Add(Task.Run(() =>
@@ -302,9 +302,9 @@ namespace SimpleJwt.Tests
             _output.WriteLine($"Concurrent Creation: {creationThroughput:F0} tokens/second");
             
             // Measure concurrent parsing
-            var parsingWatch = Stopwatch.StartNew();
+            Stopwatch parsingWatch = Stopwatch.StartNew();
             
-            var parsingTasks = new List<Task>(concurrentOperations);
+            List<Task> parsingTasks = new(concurrentOperations);
             for (int i = 0; i < concurrentOperations; i++)
             {
                 parsingTasks.Add(Task.Run(() =>
@@ -323,9 +323,9 @@ namespace SimpleJwt.Tests
             _output.WriteLine($"Concurrent Parsing: {parsingThroughput:F0} tokens/second");
             
             // Measure concurrent validation
-            var validationWatch = Stopwatch.StartNew();
+            Stopwatch validationWatch = Stopwatch.StartNew();
             
-            var validationTasks = new List<Task>(concurrentOperations);
+            List<Task> validationTasks = new(concurrentOperations);
             for (int i = 0; i < concurrentOperations; i++)
             {
                 validationTasks.Add(Task.Run(() =>
@@ -359,7 +359,7 @@ namespace SimpleJwt.Tests
 
         private string CreateMediumToken()
         {
-            var builder = _builder
+            IJwtBuilder builder = _builder
                 .SetIssuer("test-issuer")
                 .SetAudience("test-audience")
                 .SetSubject("test-subject")
@@ -377,7 +377,7 @@ namespace SimpleJwt.Tests
 
         private string CreateLargeToken()
         {
-            var builder = _builder
+            IJwtBuilder builder = _builder
                 .SetIssuer("test-issuer")
                 .SetAudience("test-audience")
                 .SetSubject("test-subject")
