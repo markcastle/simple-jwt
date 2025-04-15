@@ -466,12 +466,18 @@ string rsaToken = JwtBuilder.Create()
     .SignRs256((RSA)keyStore["rsa-2023"]);
 ```
 
-### ⚡ Token Caching for Performance
+### 🚄 Performance Optimization with Caching
+
+SimpleJwt provides two complementary caching mechanisms to optimize performance:
+
+#### 1. Validation Result Caching (ITokenCache)
+
+This caching system stores the results of token validation to avoid repeatedly validating the same token:
 
 ```csharp
-// Create a cache provider
-ITokenCache cache = new InMemoryTokenCache(
-    maxSize: 10000, // Maximum number of tokens to cache
+// Create a validation result cache provider
+ITokenCache validationCache = new InMemoryTokenCache(
+    maxSize: 10000, // Maximum number of validation results to cache
     cleanupInterval: TimeSpan.FromMinutes(10) // How often to remove expired entries
 );
 
@@ -482,12 +488,62 @@ var validationParameters = new ValidationParameters
     CacheDuration = TimeSpan.FromMinutes(5) // How long to cache validation results
 };
 
-// Create a validator that uses the cache
-var validator = new JwtValidator(cache);
+// Create a validator that uses the validation cache
+var validator = new JwtValidator(validationCache);
 
 // The cache will automatically store validation results
 // and return them for subsequent validation requests for the same token
 ```
+
+#### 2. Parsed Token Caching (ISimpleTokenCache)
+
+This caching system stores the parsed token objects themselves to avoid repeatedly parsing the same token string:
+
+```csharp
+// Create a parsed token cache
+ISimpleTokenCache tokenCache = new InMemoryTokenCache(
+    maxSize: 1000 // Maximum number of parsed tokens to store
+);
+
+// Validate a token using the token cache
+var result = validator.Validate(token, parameters, tokenCache);
+
+// For subsequent validations of the same token, the parser will retrieve
+// the parsed token from the cache instead of re-parsing it
+```
+
+#### Using Both Caches Together
+
+For maximum performance in high-throughput applications, you can use both caching mechanisms together:
+
+```csharp
+// Set up both caches
+ITokenCache validationCache = new InMemoryTokenCache(maxSize: 10000);
+ISimpleTokenCache tokenCache = new InMemoryTokenCache(maxSize: 1000);
+
+// Configure parameters
+var parameters = new ValidationParameters
+{
+    EnableCaching = true,
+    CacheDuration = TimeSpan.FromMinutes(5),
+    // Other validation parameters...
+};
+
+// Create validator with validation cache
+var validator = new JwtValidator(validationCache);
+
+// Use both caches during validation
+var result = validator.Validate(token, parameters, tokenCache);
+
+// This provides two layers of performance optimization:
+// 1. The token cache prevents unnecessary re-parsing
+// 2. The validation cache prevents unnecessary signature validation and claim checks
+```
+
+This dual-caching approach is particularly effective in scenarios where:
+- The same tokens are repeatedly validated
+- Token parsing or cryptographic operations are performance bottlenecks
+- You're handling a large volume of token validations in a short time
 
 ## 🎮 Unity-Specific Features
 

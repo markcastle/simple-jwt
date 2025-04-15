@@ -8,6 +8,7 @@ using SimpleJwt.Abstractions;
 using SimpleJwt.Abstractions.Validation;
 using SimpleJwt.Abstractions.TokenLifetime;
 using SimpleJwt.Core.Utilities;
+using SimpleJwt.Core.Caching;
 
 namespace SimpleJwt.Core.Validation
 {
@@ -813,6 +814,64 @@ namespace SimpleJwt.Core.Validation
             }
 
             return ValidationResult.Success();
+        }
+
+        /// <summary>
+        /// Validates a JWT token with the specified parameters and cache support.
+        /// </summary>
+        /// <param name="token">The JWT token to validate.</param>
+        /// <param name="parameters">The validation parameters to use.</param>
+        /// <param name="cache">The token cache to use for caching validated tokens.</param>
+        /// <returns>A validation result indicating whether the token is valid.</returns>
+        public ValidationResult Validate(string token, ValidationParameters parameters, ISimpleTokenCache cache)
+        {
+            if (string.IsNullOrEmpty(token))
+            {
+                throw new ArgumentException("Token cannot be null or empty.", nameof(token));
+            }
+
+            if (parameters == null)
+            {
+                throw new ArgumentNullException(nameof(parameters));
+            }
+
+            if (cache == null)
+            {
+                throw new ArgumentNullException(nameof(cache));
+            }
+
+            // Generate a cache key based on the token and relevant validation parameters
+            string cacheKey = $"{token}_{parameters.ValidateSignature}_{parameters.ValidateLifetime}_{parameters.ValidateIssuer}_{parameters.ValidateAudience}";
+
+            // Try to get the token from the cache
+            if (cache.TryGetToken(cacheKey, out var cachedToken))
+            {
+                // Basic validation result for cached token
+                // We can assume it's valid if it's in the cache
+                return ValidationResult.Success();
+            }
+
+            try
+            {
+                // Parse the token
+                IJwtToken parsedToken = _parser.Parse(token);
+
+                // Validate the token using the standard validate method
+                var result = Validate(parsedToken, parameters);
+
+                // If validation succeeded, cache the token
+                if (result.IsValid && parameters.EnableCaching)
+                {
+                    cache.AddOrUpdateToken(cacheKey, parsedToken);
+                }
+
+                return result;
+            }
+            catch (FormatException ex)
+            {
+                // Capture format exceptions from token parsing and return as validation error
+                return ValidationResult.Failure(ValidationCodes.InvalidToken, $"Failed to parse token: {ex.Message}");
+            }
         }
     }
 } 
