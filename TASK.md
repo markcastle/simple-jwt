@@ -168,12 +168,12 @@
     - [x] Implement secure key storage mechanism
     - [x] Add salt-based encryption with proper key derivation
     - [x] Create key rotation mechanism for long-term security
-  - [ ] Create cache expiry policies that align with token lifetimes
+  - [x] Create cache expiry policies that align with token lifetimes
 - [x] Build extension methods for easy provider registration
   - [x] Add UseInMemoryCache() extension for default provider
-  - [ ] Add UseUniCache() extension for UniCache integration
-  - [ ] Add UseCustomCache<T>() for custom provider implementation
-  - [ ] Create security configuration options for encryption settings
+  - [x] Add UseUniCache() extension for UniCache integration
+  - [x] Add UseCustomCache<T>() for custom provider implementation
+  - [x] Create security configuration options for encryption settings
 - [x] Create unit tests for caching architecture
   - [x] Test provider-agnostic interfaces with multiple implementations
   - [x] Test in-memory token caching
@@ -200,7 +200,7 @@
 
 ## Progress Tracking
 - Total Tasks: 65
-- Completed Tasks: 63
+- Completed Tasks: 67
 - Critical Priority: 24/24
 - High Priority: 15/15
 - Medium Priority: 20/20

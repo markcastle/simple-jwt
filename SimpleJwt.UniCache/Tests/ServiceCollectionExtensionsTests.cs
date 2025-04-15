@@ -49,5 +49,41 @@ namespace SimpleJwt.UniCache.Tests
             Assert.Throws<ArgumentNullException>(() => ServiceCollectionExtensions.AddUniCacheTokenRepository(null, new MemoryUniCache()));
             Assert.Throws<ArgumentNullException>(() => ServiceCollectionExtensions.AddUniCacheTokenRepository(services, null));
         }
+
+        /// <summary>
+        /// Verifies UseUniCache registers a persistent UniCacheTokenRepository with encryption settings.
+        /// </summary>
+        [Fact]
+        public void ShouldRegisterWithUseUniCache()
+        {
+            var services = new ServiceCollection();
+            var cache = new MemoryUniCache();
+            var encryption = new CacheEncryptionSettings(new byte[32], new byte[16], 100_000);
+            services.UseUniCache(() => cache, () => encryption);
+            var provider = services.BuildServiceProvider();
+            var repo = provider.GetRequiredService<ITokenCacheStorage>() as UniCacheTokenRepository;
+            Assert.NotNull(repo);
+        }
+
+        /// <summary>
+        /// Verifies UseCustomCache registers a custom ITokenCacheStorage implementation.
+        /// </summary>
+        private class CustomCache : ITokenCacheStorage
+        {
+            public Task SetTokenAsync(string key, IJwtToken token, TimeSpan? expires = null, System.Threading.CancellationToken cancellationToken = default) => Task.CompletedTask;
+            public Task<IJwtToken> GetTokenAsync(string key, System.Threading.CancellationToken cancellationToken = default) => Task.FromResult<IJwtToken>(null);
+            public Task RemoveTokenAsync(string key, System.Threading.CancellationToken cancellationToken = default) => Task.CompletedTask;
+            public Task ClearAsync(System.Threading.CancellationToken cancellationToken = default) => Task.CompletedTask;
+        }
+
+        [Fact]
+        public void ShouldRegisterWithUseCustomCache()
+        {
+            var services = new ServiceCollection();
+            services.UseCustomCache<CustomCache>();
+            var provider = services.BuildServiceProvider();
+            var repo = provider.GetRequiredService<ITokenCacheStorage>();
+            Assert.IsType<CustomCache>(repo);
+        }
     }
 }
