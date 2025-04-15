@@ -100,10 +100,10 @@ namespace SimpleJwt.Tests.Caching
         public async Task ShouldThrowOnNullKeyOrValue()
         {
             var cache = new SimpleMemoryCacheProvider<string, string>();
-            await Assert.ThrowsAsync<ArgumentNullException>(() => cache.SetAsync(null, "bar"));
-            await Assert.ThrowsAsync<ArgumentNullException>(() => cache.SetAsync("foo", null));
-            await Assert.ThrowsAsync<ArgumentNullException>(() => cache.GetAsync(null));
-            await Assert.ThrowsAsync<ArgumentNullException>(() => cache.RemoveAsync(null));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => cache.SetAsync((string?)null!, "bar"));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => cache.SetAsync("foo", (string?)null!));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => cache.GetAsync((string?)null!));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => cache.RemoveAsync((string?)null!));
         }
 
         /// <summary>
