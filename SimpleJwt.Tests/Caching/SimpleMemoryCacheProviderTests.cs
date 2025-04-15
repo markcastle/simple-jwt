@@ -12,6 +12,9 @@ namespace SimpleJwt.Tests.Caching
     /// </summary>
     public class SimpleMemoryCacheProviderTests
     {
+        /// <summary>
+        /// Verifies that a value can be stored and retrieved from the cache using the specified key.
+        /// </summary>
         [Fact]
         public async Task ShouldStoreAndRetrieveValue()
         {
@@ -21,6 +24,9 @@ namespace SimpleJwt.Tests.Caching
             Assert.Equal("bar", result);
         }
 
+        /// <summary>
+        /// Ensures that retrieving a missing key returns the default value (null).
+        /// </summary>
         [Fact]
         public async Task ShouldReturnDefaultForMissingKey()
         {
@@ -29,6 +35,9 @@ namespace SimpleJwt.Tests.Caching
             Assert.Null(result);
         }
 
+        /// <summary>
+        /// Verifies that a value can be removed from the cache and is no longer retrievable.
+        /// </summary>
         [Fact]
         public async Task ShouldRemoveValue()
         {
@@ -39,6 +48,9 @@ namespace SimpleJwt.Tests.Caching
             Assert.Null(result);
         }
 
+        /// <summary>
+        /// Ensures that all values are cleared from the cache when ClearAsync is called.
+        /// </summary>
         [Fact]
         public async Task ShouldClearAllValues()
         {
@@ -50,6 +62,9 @@ namespace SimpleJwt.Tests.Caching
             Assert.Null(await cache.GetAsync("baz"));
         }
 
+        /// <summary>
+        /// Verifies that a cached value expires and is no longer available after its expiration time.
+        /// </summary>
         [Fact]
         public async Task ShouldRespectExpiration()
         {
@@ -60,6 +75,9 @@ namespace SimpleJwt.Tests.Caching
             Assert.Null(result);
         }
 
+        /// <summary>
+        /// Ensures the cache evicts the oldest entry when the maximum size is exceeded (FIFO policy).
+        /// </summary>
         [Fact]
         public async Task ShouldEvictOldestWhenOverLimit()
         {
@@ -75,6 +93,9 @@ namespace SimpleJwt.Tests.Caching
             Assert.Equal("4", await cache.GetAsync("d"));
         }
 
+        /// <summary>
+        /// Verifies that cache methods throw ArgumentNullException when passed null keys or values.
+        /// </summary>
         [Fact]
         public async Task ShouldThrowOnNullKeyOrValue()
         {
@@ -85,6 +106,9 @@ namespace SimpleJwt.Tests.Caching
             await Assert.ThrowsAsync<ArgumentNullException>(() => cache.RemoveAsync(null));
         }
 
+        /// <summary>
+        /// Ensures that cache operations respect cancellation tokens and throw OperationCanceledException when cancelled.
+        /// </summary>
         [Fact]
         public async Task ShouldSupportCancellation()
         {
