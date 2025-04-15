@@ -111,10 +111,10 @@
 ## ⚪ Low Priority Tests
 
 ### Advanced Features
-- [ ] Claims Transformation Tests
-  - [ ] Custom claims transformation
-  - [ ] Role-based permissions
-  - [ ] Complex claim structures
+- [x] Claims Transformation Tests (2025-04-15)
+  - [x] Custom claims transformation
+  - [x] Role-based permissions
+  - [x] Complex claim structures
 
 ### Performance Optimization
 - [ ] Advanced Performance Tests
@@ -204,7 +204,7 @@
 - Critical Priority: 24/24
 - High Priority: 15/15
 - Medium Priority: 20/20
-- Low Priority: 0/10
+- Low Priority: 1/10
 
 Last Updated: 2025-04-15
 
