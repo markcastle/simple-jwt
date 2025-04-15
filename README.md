@@ -3,7 +3,7 @@
 [![.NET Standard](https://img.shields.io/badge/.NET%20Standard-2.1-blue.svg)](https://docs.microsoft.com/en-us/dotnet/standard/net-standard)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg)](https://github.com/yourusername/simple-jwt/actions)
-[![Test Coverage](https://img.shields.io/badge/Test%20Coverage-97%25-brightgreen.svg)](https://github.com/yourusername/simple-jwt/actions)
+[![Test Coverage](https://img.shields.io/badge/Test%20Coverage-98%25-brightgreen.svg)](https://github.com/yourusername/simple-jwt/actions)
 [![NuGet Version](https://img.shields.io/badge/NuGet-0.1.0-blue.svg)](https://www.nuget.org/packages/SimpleJwt.Core)
 [![Unity Compatible](https://img.shields.io/badge/Unity-Compatible-blue.svg)](https://unity.com)
 [![Security Rating](https://img.shields.io/badge/Security-A%2B-brightgreen.svg)](https://github.com/yourusername/simple-jwt/security)
@@ -797,9 +797,10 @@ All tests are designed to be JSON serializer-agnostic, ensuring the library work
 
 ### 📊 Current Test Coverage
 
-- Core Features: 95% coverage
+- Core Features: 98% coverage
 - Security Features: 100% coverage
 - RFC 7519 (JWT) Compliance: 100% coverage
 - RFC 7515 (JWS) Compliance: 100% coverage
 - IANA Registered Claims: 100% coverage
-- JSON Provider Integration: 100% coverage 
+- JSON Provider Integration: 100% coverage
+- Caching System: 100% coverage 
