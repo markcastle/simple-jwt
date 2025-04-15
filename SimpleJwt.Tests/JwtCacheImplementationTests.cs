@@ -249,7 +249,10 @@ namespace SimpleJwt.Tests
         /// </summary>
         private string CreateTestToken()
         {
-            return _builder
+            // Create a new builder instance for each call to ensure thread safety
+            var builder = new JwtBuilder();
+            
+            return builder
                 .SetIssuer("test-issuer")
                 .SetAudience("test-audience")
                 .SetSubject("test-subject")
