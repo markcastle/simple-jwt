@@ -221,6 +221,35 @@
 ### Discovered During Work
 - [ ] Consider supporting per-token expiration (TTL) as a future enhancement
 
+## Potential Future Tasks
+
+- Persistent Token Blacklist/Whitelist
+  - Add support for persistent blacklisting and optional whitelisting of tokens (useful for stateless JWT logout or compromised tokens).
+  - Consider file, database, or distributed store backends.
+- Token Introspection Endpoint (OAuth2)
+  - Implement a standard RFC 7662-compatible token introspection endpoint for OAuth2 resource server compatibility.
+- Per-Token TTL and Sliding Expiration
+  - Allow setting time-to-live (TTL) for individual tokens in the cache/repository.
+  - Optionally support sliding expiration, where TTL is refreshed on access.
+- Audit Logging
+  - Provide hooks or built-in support for logging token issuance, validation, revocation, and cache evictions.
+  - Support integration with standard logging frameworks.
+- Distributed Token Repository/Cache
+  - Add support for distributed cache/repo backends (e.g., Redis, SQL) for scale-out scenarios.
+  - Abstract the storage backend for easy extension.
+- Advanced Token Metadata and Querying
+  - Allow arbitrary metadata/tags to be associated with tokens.
+  - Enable querying tokens by metadata (e.g., device info, IP, client app).
+- Advanced Revocation Criteria
+  - Support revocation by additional criteria (e.g., by client app, IP, or custom claim).
+  - Optionally support scheduled/future revocation.
+- Robust Token Replay Detection
+  - Ensure replay detection is robust for all token types, especially one-time-use or refresh tokens.
+- Admin API/CLI for Token Management
+  - Provide an API or CLI for token inspection, revocation, and repository/cache management.
+- Extensibility and Customization
+  - Ensure all major behaviors (validation, claims transformation, revocation, cache policy) remain pluggable/extensible and are clearly documented.
+
 ## Notes
 - Tasks should be implemented in order of priority
 - Each task should include both happy path and error cases
