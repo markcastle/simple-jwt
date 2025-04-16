@@ -1,51 +1,65 @@
 # 🚀 SimpleJwt.UniCache
 
-This package provides seamless, persistent, and optionally encrypted JWT token caching for the SimpleJwt ecosystem using the UniCache library.
+This package provides seamless, persistent, and optionally encrypted JWT token caching for the SimpleJwt ecosystem using the [UniCache](https://bitbucket.org/inovus/unicache) library.
 
 ## ✨ Features
 - 🔌 Plug-and-play persistent token caching for SimpleJwt
 - 🔒 AES encryption support for sensitive token data
-- 🛡️ Key rotation and secure key management
 - 🧩 Compatible with .NET Standard 2.0+
 - 🤝 Designed for use with SimpleJwt.Abstractions
-- 🗄️ Supports file, in-memory, and custom UniCache backends
-- 🧪 Full test suite for encryption, persistence, and DI integration
+- 🗄️ Supports all UniCache backends (memory, persistent, custom)
 
 ## 🛠️ Usage
 
-1. **Install the NuGet packages:**
-   - `SimpleJwt.UniCache` (this package)
-   - `UniCache`
-   - `UniCache.Encryption`
-
-2. **Register the UniCache token repository in your DI setup:**
-
+### Basic Usage (with UniCache)
 ```csharp
-services.AddUniCacheTokenRepository();
+using UniCache;
+using UniCache.Abstractions;
+using SimpleJwt.UniCache;
+
+// Initialize the caching service (memory + persistent path)
+ICachingService cachingService = new CachingService(
+    new MemoryCache(),
+    () => "YourPersistentDataPath/"
+);
+
+// Register UniCacheTokenRepository for JWT token storage
+services.AddSingleton<ITokenCacheStorage>(
+    new UniCacheTokenRepository(cachingService)
+);
+
+// Cache a value
+cachingService.Set("myKey", "myValue", 60, CacheType.InMemory);
+
+// Retrieve the value
+string value = cachingService.Get<string>("myKey");
 ```
 
-3. **Configure encryption and UniCache options as needed:**
-   - Use `CacheEncryptionSettings` to define your key, salt, and iteration count.
-   - Store keys securely (e.g., Azure Key Vault, AWS KMS, environment variables).
-
-## 💡 Example
-
+### With Encryption
 ```csharp
-// Register UniCache-based token storage
-services.AddUniCacheTokenRepository();
+using UniCache;
+using UniCache.Abstractions;
+using SimpleJwt.UniCache;
 
-// Optionally configure with custom cache and encryption
-services.AddUniCacheTokenRepository(new MemoryUniCache(), new CacheEncryptionSettings(key, salt, 100_000));
+// Initialize with encryption
+IEncryptionProvider encryptionProvider = new AesEncryptionProvider(
+    "yourPassword",   // Use a strong password or key from secure storage
+    "yourSalt"        // Use a secure, random salt
+);
 
-// Use ITokenCacheStorage in your application
-public class MyService
-{
-    private readonly ITokenCacheStorage _tokenCache;
-    public MyService(ITokenCacheStorage tokenCache)
-    {
-        _tokenCache = tokenCache;
-    }
-}
+ICachingService secureCache = new CachingService(
+    new MemoryCache(),
+    () => "YourPersistentDataPath/",
+    encryptionProvider
+);
+
+// Register encrypted UniCacheTokenRepository
+services.AddSingleton<ITokenCacheStorage>(
+    new UniCacheTokenRepository(secureCache)
+);
+
+// Cache sensitive data
+secureCache.Set("secureKey", "sensitiveData", 60, CacheType.Persistent);
 ```
 
 ## 🧪 Test Coverage
@@ -78,7 +92,7 @@ public class MyService
 - Add audit logging for token operations
 - Improve documentation with real-world usage scenarios
 
-See the main SimpleJwt documentation for more details.
+See the [UniCache documentation](https://bitbucket.org/inovus/unicache) for more advanced usage, custom backends, and security best practices.
 
 ---
 
