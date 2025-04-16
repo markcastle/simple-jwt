@@ -77,6 +77,33 @@
   - [x] Revocation with reason
   - [x] Revocation checks during validation
 
+### Cache Expiration Policy Refactor
+- [ ] Cache Refactoring
+  - [ ] Refactor InMemoryTokenCache to support configurable eviction policies (LRU, FIFO, etc.)
+    - Refactor the internal data structure to efficiently support both LRU and FIFO eviction.
+    - Ensure the cache can be easily extended for additional policies in the future.
+  - [ ] Implement LRU (Least Recently Used) eviction as the default policy
+    - When the cache exceeds its size, evict the least recently used token.
+    - Update token access to refresh its usage order.
+  - [ ] Allow users to select eviction policy via configuration/constructor
+    - Add an enum (e.g., CacheEvictionPolicy) and expose it via constructor or configuration.
+    - Document how to set the eviction policy in the README.
+  - [ ] Ensure thread-safe and deterministic eviction logic
+    - All cache operations (add, update, get, evict) must be thread-safe.
+    - Write tests to ensure deterministic eviction behavior under concurrency.
+  - [ ] Update all cache-related tests for deterministic eviction
+    - Refactor tests to expect LRU or FIFO behavior, not random eviction.
+    - Add new tests for edge cases (e.g., repeated access, eviction order).
+- [ ] Document new cache configuration options in README
+  - Provide usage examples for each eviction policy.
+  - Clearly explain default behavior and customization options.
+- [ ] Add tests for each eviction policy (LRU, FIFO)
+  - Ensure both policies are tested for correctness and concurrency.
+  - Include tests for boundary conditions (full cache, empty cache, rapid access).
+- [ ] Maintain backward compatibility with existing cache usage
+  - Ensure that existing code using InMemoryTokenCache without specifying a policy continues to work as before (default to LRU).
+  - Add tests to verify backward compatibility.
+
 ## 🟢 Medium Priority Tests
 
 ### Performance Tests
@@ -117,13 +144,11 @@
   - [x] Complex claim structures
 
 ### Performance Optimization
-- [ ] Advanced Performance Tests
+- [x] Advanced Performance Tests
   - [x] Large token handling (2025-04-16)
   - [x] Batch processing scenarios (2025-04-16)
-  - [x] Cache performance impact
   - [x] Memory optimization scenarios (2025-04-16)
-  - [ ] Cache performance impact
-  - [ ] Memory optimization scenarios
+  - [x] Cache performance impact
 
 ### Documentation and Examples
 - [ ] Documentation Tests
@@ -192,6 +217,9 @@
   - [x] Add examples for different caching providers
   - [x] Create migration guide for existing implementations
   - [x] Document security best practices for persistent token storage
+
+### Discovered During Work
+- [ ] Consider supporting per-token expiration (TTL) as a future enhancement
 
 ## Notes
 - Tasks should be implemented in order of priority

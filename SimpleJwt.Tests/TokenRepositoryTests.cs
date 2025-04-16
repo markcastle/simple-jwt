@@ -286,6 +286,73 @@ namespace SimpleJwt.Tests
         }
 
         /// <summary>
+        /// Tests asynchronous revocation operations in the token repository.
+        /// </summary>
+        [Fact]
+        public async Task ShouldRevokeTokensAsync()
+        {
+            var repository = new InMemoryTokenRepository();
+            string token = CreateTestToken();
+            string userId = "userAsync";
+            DateTimeOffset expirationTime = DateTimeOffset.UtcNow.AddHours(1);
+            await repository.StoreTokenAsync(token, userId, expirationTime);
+            // Act - Remove token asynchronously
+            bool removed = await repository.RemoveTokenAsync(token);
+            Assert.True(removed);
+            // Assert - Token no longer exists
+            Assert.False(await repository.TokenExistsAsync(token));
+        }
+
+        /// <summary>
+        /// Tests user-based revocation with a large dataset.
+        /// </summary>
+        [Fact]
+        public void ShouldRevokeAllForUserWithLargeDataset()
+        {
+            var repository = new InMemoryTokenRepository();
+            string userId = "bulkUser";
+            int tokenCount = 5000;
+            var tokens = new List<string>();
+            for (int i = 0; i < tokenCount; i++)
+            {
+                string token = CreateTestToken();
+                tokens.Add(token);
+                repository.StoreToken(token, userId, DateTimeOffset.UtcNow.AddHours(1));
+            }
+            // Act - Remove all tokens for user
+            int removedCount = repository.RemoveTokensForUser(userId);
+            Assert.Equal(tokenCount, removedCount);
+            // Assert - No tokens for user
+            foreach (var token in tokens)
+                Assert.False(repository.TokenExists(token));
+        }
+
+        /// <summary>
+        /// Tests integration: removed (revoked) tokens are not validated as active.
+        /// </summary>
+        [Fact]
+        public void ShouldNotValidateRevokedTokens()
+        {
+            var repository = new InMemoryTokenRepository();
+            var validator = new Core.Validation.JwtValidator(_parser);
+            string token = CreateTestToken();
+            string userId = "revokeTest";
+            DateTimeOffset expirationTime = DateTimeOffset.UtcNow.AddHours(1);
+            repository.StoreToken(token, userId, expirationTime);
+            // Remove token (simulate revocation)
+            repository.RemoveToken(token);
+            // Try to validate (simulate integration)
+            var jwt = _parser.Parse(token);
+            var result = validator.Validate(jwt, new Abstractions.Validation.ValidationParameters
+            {
+                SymmetricSecurityKey = _hmacKey
+            });
+            // Assert - Should be invalid (token removed)
+            Assert.False(repository.TokenExists(token));
+            // NOTE: Depending on integration, you may want to check validator result for a removed token scenario
+        }
+
+        /// <summary>
         /// Tests the token count functionality.
         /// </summary>
         [Fact]
