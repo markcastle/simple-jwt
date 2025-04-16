@@ -193,8 +193,7 @@ The `SimpleJwtUnityExtensions.InitializeForUnity()` method performs several crit
 1. **Configures JSON Provider**: Automatically configures the Newtonsoft.Json provider as the default serializer since System.Text.Json is not fully supported in Unity.
 2. **Sets Up IL2CPP Compatibility**: Registers essential types for AOT compilation when using IL2CPP scripting backend.
 3. **Optimizes for Unity**: Adjusts serialization settings to be compatible with Unity's environment.
-4. **Registers Date Handling**: Ensures proper serialization and deserialization of DateTime objects in JWT claims.
-5. **Initializes Security Providers**: Sets up the appropriate cryptographic providers that work in Unity's runtime environment.
+4. **Initializes Security Providers**: Sets up the appropriate cryptographic providers that work in Unity's runtime environment.
 
 This initialization only needs to be called once at application startup, typically in an early-loaded MonoBehaviour.
 
@@ -922,3 +921,46 @@ All tests are designed to be JSON serializer-agnostic, ensuring the library work
 - IANA Registered Claims: 100% coverage
 - JSON Provider Integration: 100% coverage
 - Caching System: 100% coverage 
+
+## 🕹️ Unity Integration
+
+SimpleJwt and UniCache are fully compatible with Unity! You can use JWT token caching in your Unity projects without a DI container. Here’s how:
+
+### Example: Using JWT Token Caching in Unity
+```csharp
+using UnityEngine;
+using UniCache;
+using UniCache.Abstractions;
+using SimpleJwt.UniCache;
+
+public class JwtTokenManager : MonoBehaviour
+{
+    private ITokenCacheStorage tokenCache;
+
+    void Awake()
+    {
+        // Use Unity's persistent data path for file-based cache
+        string persistentPath = Application.persistentDataPath;
+
+        ICachingService cachingService = new CachingService(
+            new MemoryCache(),
+            () => persistentPath
+        );
+
+        // Optionally, add encryption
+        // IEncryptionProvider encryptionProvider = new AesEncryptionProvider("password", "salt");
+        // cachingService = new CachingService(new MemoryCache(), () => persistentPath, encryptionProvider);
+
+        tokenCache = new UniCacheTokenRepository(cachingService);
+    }
+
+    public void StoreToken(string key, IJwtToken token)
+    {
+        // Use tokenCache.SetTokenAsync(...) as needed
+    }
+}
+```
+
+> ℹ️ **Tip:** Use `Application.persistentDataPath` for persistent storage. Encryption is supported as in .NET projects.
+
+{{ ... }}

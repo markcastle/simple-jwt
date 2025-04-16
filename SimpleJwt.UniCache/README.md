@@ -62,6 +62,97 @@ services.AddSingleton<ITokenCacheStorage>(
 secureCache.Set("secureKey", "sensitiveData", 60, CacheType.Persistent);
 ```
 
+## 🧩 Dependency Injection (DI) Integration
+
+SimpleJwt.UniCache provides several flexible ways to register your token cache storage using dependency injection. Choose the method that best fits your application's needs:
+
+| Method | Purpose | Example |
+|--------|---------|---------|
+| `AddUniCacheTokenRepository()` | Register default UniCacheTokenRepository (uses default UniCache config). | `services.AddUniCacheTokenRepository();` |
+| `AddUniCacheTokenRepository(IUniCache, ICacheEncryptionSettings)` | Register with a custom UniCache instance and optional encryption. | `services.AddUniCacheTokenRepository(myCache, myEncryptionSettings);` |
+| `AddInMemoryUniCacheTokenRepository()` | Register an in-memory-only cache (ephemeral/testing). | `services.AddInMemoryUniCacheTokenRepository();` |
+| `UseUniCache(Func<IUniCache>, Func<ICacheEncryptionSettings>)` | Register with advanced configuration using delegates. | `services.UseUniCache(() => myCache, () => myEncryptionSettings);` |
+| `UseCustomCache<T>()` | Register a custom implementation of ITokenCacheStorage. | `services.UseCustomCache<MyCustomCache>();` |
+
+### Examples
+
+#### 1. Default Registration
+```csharp
+services.AddUniCacheTokenRepository();
+```
+
+#### 2. Custom UniCache Instance (with optional encryption)
+```csharp
+IUniCache myCache = new MemoryCache(); // or your own implementation
+ICacheEncryptionSettings myEncryptionSettings = ...; // optional
+services.AddUniCacheTokenRepository(myCache, myEncryptionSettings);
+```
+
+#### 3. In-Memory Only Cache
+```csharp
+services.AddInMemoryUniCacheTokenRepository();
+```
+
+#### 4. Advanced/Delegate-Based Registration
+```csharp
+services.UseUniCache(
+    () => new MemoryCache(),
+    () => new CacheEncryptionSettings(key, salt, 100_000)
+);
+```
+
+#### 5. Custom Implementation
+```csharp
+services.UseCustomCache<MyCustomCache>();
+```
+
+> ℹ️ **Tip:** For persistent caching, use a persistent UniCache backend and specify the storage path in your implementation.
+
+See the XML comments in `ServiceCollectionExtensions` for further details on each method.
+
+## 🕹️ Unity Integration
+
+SimpleJwt.UniCache works seamlessly in Unity projects! You do not need a DI container—just instantiate and use the cache directly in your MonoBehaviour or ScriptableObject classes.
+
+### Example: Using UniCache in Unity
+```csharp
+using UnityEngine;
+using UniCache;
+using UniCache.Abstractions;
+using SimpleJwt.UniCache;
+
+public class JwtTokenManager : MonoBehaviour
+{
+    private ITokenCacheStorage tokenCache;
+
+    void Awake()
+    {
+        // Use Unity's persistent data path for file-based cache
+        string persistentPath = Application.persistentDataPath;
+
+        // Set up UniCache for Unity (memory + persistent path)
+        ICachingService cachingService = new CachingService(
+            new MemoryCache(),
+            () => persistentPath
+        );
+
+        // Optionally, add encryption
+        // IEncryptionProvider encryptionProvider = new AesEncryptionProvider("password", "salt");
+        // cachingService = new CachingService(new MemoryCache(), () => persistentPath, encryptionProvider);
+
+        // Register with SimpleJwt.UniCache (no DI container needed)
+        tokenCache = new UniCacheTokenRepository(cachingService);
+    }
+
+    public void StoreToken(string key, IJwtToken token)
+    {
+        // Use tokenCache.SetTokenAsync(...) as needed
+    }
+}
+```
+
+> ℹ️ **Tip:** Use `Application.persistentDataPath` for cross-platform persistence in Unity. Encryption works the same as in .NET Standard projects.
+
 ## 🧪 Test Coverage
 - [x] AES encryption and decryption
 - [x] Key rotation
