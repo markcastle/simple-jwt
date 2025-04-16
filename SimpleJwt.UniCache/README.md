@@ -110,6 +110,33 @@ services.UseCustomCache<MyCustomCache>();
 
 See the XML comments in `ServiceCollectionExtensions` for further details on each method.
 
+### Example: Persistent UniCache Backend
+
+To use persistent caching, create a persistent UniCache backend by specifying a storage path (such as an app data directory or Unity's `Application.persistentDataPath`).
+
+```csharp
+using UniCache;
+using UniCache.Abstractions;
+using SimpleJwt.UniCache;
+
+// Example: Use a persistent storage path for cache
+string persistentPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MyAppCache");
+
+ICachingService cachingService = new CachingService(
+    new MemoryCache(),
+    () => persistentPath
+);
+
+// Register with DI or use directly
+services.AddUniCacheTokenRepository(cachingService);
+
+// Or, in Unity:
+// string persistentPath = Application.persistentDataPath;
+// ICachingService cachingService = new CachingService(new MemoryCache(), () => persistentPath);
+```
+
+> 🗄️ **Tip:** The persistent path should be a directory where your app has write permissions. On desktop, use `Environment.SpecialFolder.ApplicationData`; in Unity, use `Application.persistentDataPath`.
+
 ## 🕹️ Unity Integration
 
 SimpleJwt.UniCache works seamlessly in Unity projects! You do not need a DI container—just instantiate and use the cache directly in your MonoBehaviour or ScriptableObject classes.
