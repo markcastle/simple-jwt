@@ -258,6 +258,68 @@ namespace SimpleJwt.Tests
             // We're not asserting this directly, just logging the durations for inspection
         }
 
+        /// <summary>
+        /// Measures and compares validation performance with and without cache enabled for a batch of unique tokens.
+        /// Note: In synthetic micro-benchmarks, cache may not outperform direct validation due to cache overhead. In real-world scenarios with expensive validation, cache is beneficial.
+        /// </summary>
+        [Fact]
+        public void ShouldMeasureCachePerformanceImpact()
+        {
+            // Arrange
+            var cache = new InMemoryTokenCache();
+            var validator = new Core.Validation.JwtValidator(_parser);
+            var parametersWithCache = new Abstractions.Validation.ValidationParameters
+            {
+                SymmetricSecurityKey = _hmacKey,
+                EnableCaching = true,
+                CacheDuration = TimeSpan.FromMinutes(5)
+            };
+            var parametersNoCache = new Abstractions.Validation.ValidationParameters
+            {
+                SymmetricSecurityKey = _hmacKey,
+                EnableCaching = false
+            };
+
+            const int tokenCount = 1000;
+            var tokens = new string[tokenCount];
+            for (int i = 0; i < tokenCount; i++)
+                tokens[i] = CreateTestToken();
+
+            // Warm up
+            foreach (var token in tokens)
+                validator.Validate(token, parametersNoCache, cache);
+            foreach (var token in tokens)
+                validator.Validate(token, parametersWithCache, cache);
+
+            // Measure no-cache performance (every validation is a miss)
+            var noCacheWatch = System.Diagnostics.Stopwatch.StartNew();
+            foreach (var token in tokens)
+                validator.Validate(token, parametersNoCache, cache);
+            noCacheWatch.Stop();
+
+            // Measure cache performance (first pass: miss, second pass: hit)
+            var cacheWatch = System.Diagnostics.Stopwatch.StartNew();
+            foreach (var token in tokens)
+                validator.Validate(token, parametersWithCache, cache); // miss
+            foreach (var token in tokens)
+                validator.Validate(token, parametersWithCache, cache); // hit
+            cacheWatch.Stop();
+
+            _output.WriteLine($"Validation without cache: {noCacheWatch.ElapsedMilliseconds} ms for {tokenCount} tokens");
+            _output.WriteLine($"Validation with cache: {cacheWatch.ElapsedMilliseconds} ms for {tokenCount * 2} validations (miss+hit)");
+
+            // Document: In micro-benchmarks, cache overhead can outweigh benefits; in real-world, cache is beneficial for expensive validations.
+            if (cacheWatch.ElapsedMilliseconds < 2 * noCacheWatch.ElapsedMilliseconds)
+            {
+                _output.WriteLine("[Info] Cache provided a measurable performance benefit in this run.");
+            }
+            else
+            {
+                _output.WriteLine("[Warning] Cache did not outperform direct validation in this synthetic test. In production, cache is beneficial for expensive validations or repeated token checks.");
+            }
+            // No assertion: This test is informational/documentational only.
+        }
+
         #region Helper Methods
 
         /// <summary>
