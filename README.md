@@ -656,6 +656,13 @@ This dual-caching approach is particularly effective in scenarios where:
 - Token parsing or cryptographic operations are performance bottlenecks
 - You're handling a large volume of token validations in a short time
 
+## Performance and Memory Optimization Tests
+
+- **Cache Performance Impact**: Performance tests compare JWT validation with and without caching for batches of tokens. Results are logged for inspection and document that, in synthetic micro-benchmarks, cache may not always outperform direct validation, but is beneficial in real-world scenarios with expensive or repeated validations.
+- **Memory Optimization Scenarios**: Batch tests (10,000+ tokens) ensure that memory usage remains within a safe threshold and no leaks occur during heavy token operations. Results are logged and verified in CI.
+
+See `SimpleJwt.Tests/JwtCacheImplementationTests.cs` for details.
+
 ## 🎮 Unity-Specific Features
 
 When using SimpleJwt in Unity projects:

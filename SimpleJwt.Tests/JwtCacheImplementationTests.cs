@@ -320,6 +320,50 @@ namespace SimpleJwt.Tests
             // No assertion: This test is informational/documentational only.
         }
 
+        /// <summary>
+        /// Ensures that batch token operations do not result in excessive memory usage or leaks.
+        /// </summary>
+        [Fact]
+        public void ShouldNotLeakMemoryDuringBatchTokenOperations()
+        {
+            // Arrange
+            var cache = new InMemoryTokenCache();
+            var validator = new Core.Validation.JwtValidator(_parser);
+            var parameters = new Abstractions.Validation.ValidationParameters
+            {
+                SymmetricSecurityKey = _hmacKey,
+                EnableCaching = true,
+                CacheDuration = TimeSpan.FromMinutes(5)
+            };
+
+            const int tokenCount = 10000;
+            var tokens = new string[tokenCount];
+            for (int i = 0; i < tokenCount; i++)
+                tokens[i] = CreateTestToken();
+
+            // Force GC and get initial memory usage
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            long initialMemory = GC.GetTotalMemory(true);
+
+            // Perform batch token validation with cache
+            foreach (var token in tokens)
+                validator.Validate(token, parameters, cache);
+
+            // Force GC and get final memory usage
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            long finalMemory = GC.GetTotalMemory(true);
+
+            long delta = finalMemory - initialMemory;
+            _output.WriteLine($"Initial memory: {initialMemory / 1024 / 1024} MB");
+            _output.WriteLine($"Final memory: {finalMemory / 1024 / 1024} MB");
+            _output.WriteLine($"Memory delta: {delta / 1024 / 1024} MB");
+
+            // Assert: memory growth should be within 10 MB
+            Assert.True(delta < 10 * 1024 * 1024, $"Memory usage increased by more than 10 MB during batch token operations: {delta / 1024 / 1024} MB");
+        }
+
         #region Helper Methods
 
         /// <summary>
